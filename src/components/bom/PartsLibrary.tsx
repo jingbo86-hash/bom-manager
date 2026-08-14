@@ -138,29 +138,58 @@ export function PartsLibrary({ onPriceChange }: Props) {
     const now = Date.now();
     const validRows = rows.filter(r => r.errors.length === 0);
     const newParts: Part[] = [];
+    const updateParts: Part[] = [];
 
     for (const row of validRows) {
       const price = parseFloat(row.data.price) || 0;
-      const code = generatePartCode([...state.parts, ...newParts]);
-      newParts.push({
-        id: generateId(),
-        code,
-        name: row.data.name || '未命名',
-        spec: row.data.spec || '',
-        unit: row.data.unit || '个',
-        price: Math.max(0, price),
-        quantity: parseFloat(row.data.quantity) || 0,
-        supplier: row.data.supplier || '',
-        remark: row.data.remark || '',
-        purchaseLink: row.data.purchaseLink || '',
-        categoryId: selectedCategoryId || '',
-        createdAt: now,
-        updatedAt: now,
-      });
+      const quantity = parseFloat(row.data.quantity) || 0;
+      const name = row.data.name || '未命名';
+      
+      // 检查是否已存在同名零件
+      const existingPart = state.parts.find(p => p.name === name);
+      
+      if (existingPart) {
+        // 如果存在，更新现有零件
+        updateParts.push({
+          ...existingPart,
+          spec: row.data.spec || existingPart.spec,
+          unit: row.data.unit || existingPart.unit,
+          price: Math.max(0, price) || existingPart.price,
+          quantity: quantity || existingPart.quantity,
+          supplier: row.data.supplier || existingPart.supplier,
+          remark: row.data.remark || existingPart.remark,
+          purchaseLink: row.data.purchaseLink || existingPart.purchaseLink,
+          updatedAt: now,
+        });
+      } else {
+        // 如果不存在，创建新零件
+        const code = generatePartCode([...state.parts, ...newParts]);
+        newParts.push({
+          id: generateId(),
+          code,
+          name,
+          spec: row.data.spec || '',
+          unit: row.data.unit || '个',
+          price: Math.max(0, price),
+          quantity,
+          supplier: row.data.supplier || '',
+          remark: row.data.remark || '',
+          purchaseLink: row.data.purchaseLink || '',
+          categoryId: selectedCategoryId || '',
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
     }
 
+    // 添加新零件
     for (const part of newParts) {
       dispatch({ type: 'ADD_PART', payload: part });
+    }
+    
+    // 更新现有零件
+    for (const part of updateParts) {
+      dispatch({ type: 'UPDATE_PART', payload: part });
     }
   }, [state.parts, selectedCategoryId, dispatch]);
 
