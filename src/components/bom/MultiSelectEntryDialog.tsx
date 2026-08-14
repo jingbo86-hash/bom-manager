@@ -6,7 +6,6 @@ import { generateId, calculateAssemblyCost, wouldExceedMaxDepth } from '@/lib/bo
 import type { Assembly, Part, BomEntry } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -104,12 +103,10 @@ export function MultiSelectEntryDialog({ open, onOpenChange, parentAssembly, onC
 
   const currentList = activeTab === 'part' ? availableParts : availableAssemblies;
 
-  // 检查某个项是否已选中
   const isSelected = useCallback((id: string) => {
     return selected.some(s => s.id === id);
   }, [selected]);
 
-  // 切换选中状态
   const toggleSelect = useCallback((id: string) => {
     setSelected(prev => {
       const exists = prev.find(s => s.id === id);
@@ -124,7 +121,6 @@ export function MultiSelectEntryDialog({ open, onOpenChange, parentAssembly, onC
     });
   }, [activeTab, state.parts, state.assemblies]);
 
-  // 全选/取消全选
   const toggleSelectAll = useCallback(() => {
     const currentIds = new Set(currentList.map(i => i.id));
     const allSelected = currentList.every(i => isSelected(i.id));
@@ -144,26 +140,22 @@ export function MultiSelectEntryDialog({ open, onOpenChange, parentAssembly, onC
   const allVisibleSelected = currentList.length > 0 && currentList.every(i => isSelected(i.id));
   const someVisibleSelected = currentList.some(i => isSelected(i.id));
 
-  // 更新选中项的用量
   const updateQuantity = useCallback((id: string, quantity: number) => {
     setSelected(prev => prev.map(s =>
       s.id === id ? { ...s, quantity: Math.max(1, quantity) } : s
     ));
   }, []);
 
-  // 更新选中项的损耗率
   const updateWasteRate = useCallback((id: string, wasteRate: number) => {
     setSelected(prev => prev.map(s =>
       s.id === id ? { ...s, wasteRate: Math.min(100, Math.max(0, wasteRate)) / 100 } : s
     ));
   }, []);
 
-  // 移除选中项
   const removeSelected = useCallback((id: string) => {
     setSelected(prev => prev.filter(s => s.id !== id));
   }, []);
 
-  // 获取显示名称
   const getItemLabel = useCallback((id: string, type: 'part' | 'assembly') => {
     if (type === 'part') {
       const p = state.parts.find(p => p.id === id);
@@ -173,18 +165,15 @@ export function MultiSelectEntryDialog({ open, onOpenChange, parentAssembly, onC
     return a ? `[${a.code}] ${a.name}` : '未知组件';
   }, [state.parts, state.assemblies]);
 
-  // 获取零件单价
   const getPartPrice = useCallback((id: string) => {
     const p = state.parts.find(p => p.id === id);
     return p?.price ?? 0;
   }, [state.parts]);
 
-  // 获取组件成本
   const getAssemblyCost = useCallback((id: string) => {
     return calculateAssemblyCost(id, state.parts, state.assemblies, state.bomEntries);
   }, [state.parts, state.assemblies, state.bomEntries]);
 
-  // 深度校验
   const validateDepth = useCallback((selectedItems: SelectedItem[]): boolean => {
     const assemblyItems = selectedItems.filter(s => s.type === 'assembly');
     if (assemblyItems.length === 0) return true;
@@ -225,21 +214,21 @@ export function MultiSelectEntryDialog({ open, onOpenChange, parentAssembly, onC
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[720px] max-h-[80vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[760px] max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-5 pb-0">
           <DialogTitle>添加子件到 {parentAssembly.name}</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={v => { setActiveTab(v as 'part' | 'assembly'); setSearchQuery(''); }}>
-          <TabsList className="grid w-[200px] grid-cols-2">
+        <Tabs value={activeTab} onValueChange={v => { setActiveTab(v as 'part' | 'assembly'); setSearchQuery(''); }} className="flex flex-col flex-1 min-h-0 px-6">
+          <TabsList className="grid w-[200px] grid-cols-2 mt-2">
             <TabsTrigger value="part">零件</TabsTrigger>
             <TabsTrigger value="assembly">组件</TabsTrigger>
           </TabsList>
 
-          <div className="flex gap-4 mt-3 flex-1 min-h-0" style={{ height: 'calc(80vh - 200px)' }}>
+          <div className="flex gap-4 mt-3 flex-1 min-h-0" style={{ height: '420px' }}>
             {/* 左侧：选择列表 */}
             <div className="flex-1 flex flex-col min-w-0 border rounded-lg border-slate-200">
-              <div className="p-2 border-b border-slate-100">
+              <div className="p-2 border-b border-slate-100 flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <Input
                     placeholder="搜索编号/名称/规格..."
@@ -305,7 +294,7 @@ export function MultiSelectEntryDialog({ open, onOpenChange, parentAssembly, onC
 
             {/* 右侧：已选列表 */}
             <div className="w-64 flex-shrink-0 flex flex-col border rounded-lg border-slate-200">
-              <div className="p-2 border-b border-slate-100 bg-slate-50/50">
+              <div className="p-2 border-b border-slate-100 bg-slate-50/50 flex-shrink-0">
                 <span className="text-xs font-medium text-slate-600">
                   已选 {selected.length} 项
                 </span>
@@ -376,21 +365,24 @@ export function MultiSelectEntryDialog({ open, onOpenChange, parentAssembly, onC
           </div>
         </Tabs>
 
-        <div className="flex justify-between items-center pt-2 mt-2 border-t border-slate-200">
+        {/* 底部按钮组 */}
+        <div className="flex items-center justify-between px-6 py-3 border-t border-slate-200 bg-slate-50/50 flex-shrink-0">
           <div className="text-xs text-slate-400">
             {activeTab === 'assembly' && (
               <span>自动排除自身和上级组件（避免循环引用）</span>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleClose}>取消</Button>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={handleClose} className="min-w-[80px]">
+              取消
+            </Button>
             <Button
-              size="sm"
               onClick={handleConfirm}
               disabled={selected.length === 0}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="min-w-[140px] bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              size="default"
             >
-              确认添加 ({selected.length})
+              确认添加 {selected.length > 0 ? `(${selected.length})` : ''}
             </Button>
           </div>
         </div>

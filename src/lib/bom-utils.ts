@@ -1,4 +1,4 @@
-import type { Part, Assembly, BomEntry, BomTreeNode, QuoteItem, AppState, Product } from './types';
+import type { Part, Assembly, BomEntry, BomTreeNode, QuoteItem, AppState, Product, CostCoefficients, CostBreakdown } from './types';
 
 // ============================================================
 // ID 生成
@@ -320,6 +320,49 @@ export function calculateProductCost(
     state.assemblies,
     state.bomEntries
   );
+}
+
+/** 获取产品的综合成本系数 */
+export function getProductCoefficients(
+  product: Product | undefined,
+  defaultCoefficients: CostCoefficients
+): CostCoefficients {
+  if (product?.coefficients) {
+    return product.coefficients;
+  }
+  return defaultCoefficients;
+}
+
+/** 计算综合成本费用明细 */
+export function calculateCostBreakdown(
+  materialCost: number,
+  coefficients: CostCoefficients
+): CostBreakdown {
+  const laborCost = materialCost * coefficients.labor / 100;
+  const wasteCost = materialCost * coefficients.waste / 100;
+  const freightCost = materialCost * coefficients.freight / 100;
+  const taxCost = materialCost * coefficients.tax / 100;
+  const rentCost = materialCost * coefficients.rent / 100;
+  const utilitiesCost = materialCost * coefficients.utilities / 100;
+
+  const totalCost = materialCost + laborCost + wasteCost + freightCost + taxCost + rentCost + utilitiesCost;
+
+  return {
+    materialCost,
+    laborCost,
+    laborRate: coefficients.labor,
+    wasteCost,
+    wasteRate: coefficients.waste,
+    freightCost,
+    freightRate: coefficients.freight,
+    taxCost,
+    taxRate: coefficients.tax,
+    rentCost,
+    rentRate: coefficients.rent,
+    utilitiesCost,
+    utilitiesRate: coefficients.utilities,
+    totalCost,
+  };
 }
 
 /** 获取组件的层级深度 */

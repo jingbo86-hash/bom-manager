@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { useAppState } from '@/lib/store';
-import { generateId, flattenBomForQuote, calculateProductCost } from '@/lib/bom-utils';
-import type { Quote, QuoteItem } from '@/lib/types';
+import { generateId, flattenBomForQuote, calculateProductCost, getProductCoefficients, calculateCostBreakdown } from '@/lib/bom-utils';
+import type { Quote, QuoteItem, CostBreakdown } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,16 +58,23 @@ export function QuoteSheet() {
       state.bomEntries
     );
     const margin = profitMargin / 100;
-    const suggestedPrice = totalCost * (1 + margin);
+
+    // 计算综合成本系数明细
+    const coefficients = getProductCoefficients(selectedProduct, state.defaultCoefficients);
+    const breakdown = calculateCostBreakdown(totalCost, coefficients);
+
+    const suggestedPrice = breakdown.totalCost * (1 + margin);
 
     const quote: Quote = {
       id: generateId(),
       productId: selectedProduct.id,
       productName: selectedProduct.name,
       profitMargin: margin,
-      totalCost,
+      materialCost: totalCost,
+      totalCost: breakdown.totalCost,
       suggestedPrice,
       items,
+      costBreakdown: breakdown,
       createdAt: Date.now(),
     };
 
@@ -177,12 +184,23 @@ export function QuoteSheet() {
           </div>
           {selectedProduct && (
             <div className="text-sm">
-              <span className="text-slate-500">预估成本: </span>
+              <span className="text-slate-500">物料成本: </span>
               <span className="font-mono font-bold text-amber-600">¥{previewCost.toFixed(2)}</span>
+              <span className="text-slate-400 mx-2">|</span>
+              <span className="text-slate-500">综合费用: </span>
+              <span className="font-mono font-bold text-blue-600">¥{(selectedProduct ? (() => {
+                const coeff = getProductCoefficients(selectedProduct, state.defaultCoefficients);
+                const breakdown = calculateCostBreakdown(previewCost, coeff);
+                return breakdown.totalCost - previewCost;
+              })() : 0).toFixed(2)}</span>
               <span className="text-slate-400 mx-2">|</span>
               <span className="text-slate-500">建议售价: </span>
               <span className="font-mono font-bold text-emerald-600">
-                ¥{(previewCost * (1 + profitMargin / 100)).toFixed(2)}
+                ¥{(selectedProduct ? (() => {
+                  const coeff = getProductCoefficients(selectedProduct, state.defaultCoefficients);
+                  const breakdown = calculateCostBreakdown(previewCost, coeff);
+                  return breakdown.totalCost * (1 + profitMargin / 100);
+                })() : 0).toFixed(2)}
               </span>
             </div>
           )}
@@ -210,6 +228,7 @@ export function QuoteSheet() {
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="text-xs">产品名称</TableHead>
+                <TableHead className="text-xs text-right">物料成本</TableHead>
                 <TableHead className="text-xs text-right">总成本</TableHead>
                 <TableHead className="text-xs text-right">利润率</TableHead>
                 <TableHead className="text-xs text-right">建议售价</TableHead>
@@ -221,6 +240,7 @@ export function QuoteSheet() {
               {state.quotes.map(quote => (
                 <TableRow key={quote.id} className="group">
                   <TableCell className="font-medium">{quote.productName}</TableCell>
+                  <TableCell className="text-right font-mono text-slate-500">¥{quote.materialCost?.toFixed(2) ?? '-'}</TableCell>
                   <TableCell className="text-right font-mono text-amber-600">¥{quote.totalCost.toFixed(2)}</TableCell>
                   <TableCell className="text-right font-mono">{(quote.profitMargin * 100).toFixed(1)}%</TableCell>
                   <TableCell className="text-right font-mono text-emerald-600 font-medium">¥{quote.suggestedPrice.toFixed(2)}</TableCell>
@@ -295,16 +315,51 @@ export function QuoteSheet() {
               </div>
 
               {/* 成本汇总 */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                  <span className="text-xs text-amber-600">总成本</span>
-                  <p className="text-2xl font-mono font-bold text-amber-700">¥{viewingQuote.totalCost.toFixed(2)}</p>
+                  <span className="text-xs text-amber-600">物料成本</span>
+                  <p className="text-xl font-mono font-bold text-amber-700">¥{viewingQuote.materialCost.toFixed(2)}</p>
                 </div>
                 <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
                   <span className="text-xs text-emerald-600">建议售价</span>
-                  <p className="text-2xl font-mono font-bold text-emerald-700">¥{viewingQuote.suggestedPrice.toFixed(2)}</p>
+                  <p className="text-xl font-mono font-bold text-emerald-700">¥{viewingQuote.suggestedPrice.toFixed(2)}</p>
                 </div>
               </div>
+
+              {/* 费用明细 */}
+              {viewingQuote.costBreakdown && (
+                <div className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                  <h4 className="text-xs font-semibold text-slate-600 mb-2">费用明细</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {[
+                      { label: '物料成本', value: viewingQuote.costBreakdown.materialCost, rate: null, cls: 'text-slate-900' },
+                      { label: `人工费用`, value: viewingQuote.costBreakdown.laborCost, rate: viewingQuote.costBreakdown.laborRate, cls: 'text-blue-600' },
+                      { label: `损耗费用`, value: viewingQuote.costBreakdown.wasteCost, rate: viewingQuote.costBreakdown.wasteRate, cls: 'text-amber-600' },
+                      { label: `运费`, value: viewingQuote.costBreakdown.freightCost, rate: viewingQuote.costBreakdown.freightRate, cls: 'text-emerald-600' },
+                      { label: `税费`, value: viewingQuote.costBreakdown.taxCost, rate: viewingQuote.costBreakdown.taxRate, cls: 'text-purple-600' },
+                      { label: `房租分摊`, value: viewingQuote.costBreakdown.rentCost, rate: viewingQuote.costBreakdown.rentRate, cls: 'text-orange-600' },
+                      { label: `水电分摊`, value: viewingQuote.costBreakdown.utilitiesCost, rate: viewingQuote.costBreakdown.utilitiesRate, cls: 'text-cyan-600' },
+                    ].map(item => (
+                      <div key={item.label} className="bg-white rounded border border-slate-100 p-2">
+                        <div className="text-[10px] text-slate-400">
+                          {item.label}
+                          {item.rate !== null && ` (${item.rate}%)`}
+                        </div>
+                        <div className={`text-sm font-mono font-medium ${item.cls}`}>¥{item.value.toFixed(2)}</div>
+                      </div>
+                    ))}
+                    <div className="bg-blue-50 rounded border border-blue-100 p-2 col-span-2 sm:col-span-3">
+                      <div className="text-[10px] text-blue-500 font-medium">总成本（含各项费用）</div>
+                      <div className="text-lg font-mono font-bold text-blue-700">¥{viewingQuote.totalCost.toFixed(2)}</div>
+                    </div>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-slate-200 flex items-center gap-4 text-sm">
+                    <span className="text-slate-500">利润率: <strong>{(viewingQuote.profitMargin * 100).toFixed(1)}%</strong></span>
+                    <span className="text-slate-500">利润: <strong className="text-emerald-600 font-mono">¥{(viewingQuote.suggestedPrice - viewingQuote.totalCost).toFixed(2)}</strong></span>
+                    <span className="text-slate-500 font-semibold">建议售价: <strong className="text-emerald-600 font-mono text-lg">¥{viewingQuote.suggestedPrice.toFixed(2)}</strong></span>
+                  </div>
+                </div>
+              )}
 
               {/* 明细表 */}
               <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
@@ -349,8 +404,26 @@ export function QuoteSheet() {
           <div className="py-3 space-y-2 text-sm">
             <p>产品: <span className="font-medium">{selectedProduct?.name}</span></p>
             <p>利润率: <span className="font-medium">{profitMargin}%</span></p>
-            <p>预估成本: <span className="font-mono font-medium text-amber-600">¥{previewCost.toFixed(2)}</span></p>
-            <p>建议售价: <span className="font-mono font-medium text-emerald-600">¥{(previewCost * (1 + profitMargin / 100)).toFixed(2)}</span></p>
+            <p>物料成本: <span className="font-mono font-medium text-amber-600">¥{previewCost.toFixed(2)}</span></p>
+            {selectedProduct && (() => {
+              const coeff = getProductCoefficients(selectedProduct, state.defaultCoefficients);
+              const totalRate = Object.values(coeff).reduce((a, b) => a + b, 0);
+              return (
+                <p>综合费用率: <span className="font-medium">{totalRate.toFixed(1)}%</span></p>
+              );
+            })()}
+            {selectedProduct && (() => {
+              const coeff = getProductCoefficients(selectedProduct, state.defaultCoefficients);
+              const breakdown = calculateCostBreakdown(previewCost, coeff);
+              return (
+                <p>总成本: <span className="font-mono font-medium text-blue-600">¥{breakdown.totalCost.toFixed(2)}</span></p>
+              );
+            })()}
+            <p>建议售价: <span className="font-mono font-medium text-emerald-600">¥{(selectedProduct ? (() => {
+              const coeff = getProductCoefficients(selectedProduct, state.defaultCoefficients);
+              const breakdown = calculateCostBreakdown(previewCost, coeff);
+              return breakdown.totalCost * (1 + profitMargin / 100);
+            })() : 0).toFixed(2)}</span></p>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setGenerateDialogOpen(false)}>取消</Button>

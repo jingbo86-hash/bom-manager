@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
-import type { AppState, Part, Assembly, BomEntry, Product, Quote } from './types';
+import type { AppState, Part, Assembly, BomEntry, Product, Quote, CostCoefficients } from './types';
 
 // ============================================================
 // 初始状态
@@ -12,6 +12,14 @@ const initialState: AppState = {
   bomEntries: [],
   products: [],
   quotes: [],
+  defaultCoefficients: {
+    labor: 10,
+    waste: 2,
+    freight: 3,
+    tax: 13,
+    rent: 5,
+    utilities: 3,
+  },
 };
 
 // ============================================================
@@ -32,6 +40,7 @@ type Action =
   | { type: 'ADD_PRODUCT'; payload: Product }
   | { type: 'UPDATE_PRODUCT'; payload: Product }
   | { type: 'DELETE_PRODUCT'; payload: string }
+  | { type: 'UPDATE_DEFAULT_COEFFICIENTS'; payload: CostCoefficients }
   | { type: 'ADD_QUOTE'; payload: Quote };
 
 // ============================================================
@@ -114,6 +123,10 @@ function appReducer(state: AppState, action: Action): AppState {
         ...state,
         products: state.products.filter(p => p.id !== action.payload),
       };
+
+    // 默认系数
+    case 'UPDATE_DEFAULT_COEFFICIENTS':
+      return { ...state, defaultCoefficients: action.payload };
 
     // 报价
     case 'ADD_QUOTE':

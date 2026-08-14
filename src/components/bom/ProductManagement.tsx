@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { useAppState } from '@/lib/store';
-import { generateId, generateProductCode, calculateProductCost } from '@/lib/bom-utils';
-import type { Product } from '@/lib/types';
+import { generateId, generateProductCode, calculateProductCost, calculateCostBreakdown } from '@/lib/bom-utils';
+import type { Product, CostCoefficients } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { BatchImportDialog, type ImportRow } from './BatchImportDialog';
+import { CostCoefficientEditor } from './CostCoefficientEditor';
 
 const PRODUCT_IMPORT_COLUMNS = [
   { key: 'name', label: '产品名称', required: true, sample: '智能设备控制器' },
@@ -42,6 +43,8 @@ export function ProductManagement() {
   });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [showCoefficients, setShowCoefficients] = useState(false);
+  const [editCoefficients, setEditCoefficients] = useState<CostCoefficients>(state.defaultCoefficients);
 
   // 可关联的顶级组件（没有被其他产品引用的组件）
   const availableAssemblies = useMemo(() => {
@@ -62,6 +65,8 @@ export function ProductManagement() {
       description: '',
       topAssemblyId: '',
     });
+    setEditCoefficients(state.defaultCoefficients);
+    setShowCoefficients(false);
     setDialogOpen(true);
   };
 
@@ -74,22 +79,26 @@ export function ProductManagement() {
       description: product.description,
       topAssemblyId: product.topAssemblyId,
     });
+    setEditCoefficients(product.coefficients || state.defaultCoefficients);
+    setShowCoefficients(true);
     setDialogOpen(true);
   };
 
   const handleSave = () => {
     if (!form.code.trim() || !form.name.trim() || !form.topAssemblyId) return;
     const now = Date.now();
+    const coefficients = showCoefficients && editCoefficients ? editCoefficients : undefined;
 
     if (editingProduct) {
       dispatch({
         type: 'UPDATE_PRODUCT',
-        payload: { ...editingProduct, ...form, updatedAt: now },
+        payload: { ...editingProduct, ...form, coefficients, updatedAt: now },
       });
     } else {
       const newProduct: Product = {
         id: generateId(),
         ...form,
+        coefficients,
         createdAt: now,
         updatedAt: now,
       };
@@ -297,6 +306,42 @@ export function ProductManagement() {
                 placeholder="产品描述"
                 className="h-9"
               />
+            </div>
+
+            {/* 综合成本系数 */}
+            <div className="border-t border-slate-200 pt-3 mt-1">
+              <button
+                type="button"
+                onClick={() => setShowCoefficients(!showCoefficients)}
+                className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-800"
+              >
+                <svg
+                  className={`w-3.5 h-3.5 transition-transform ${showCoefficients ? 'rotate-90' : ''}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+                综合成本系数设置
+                {showCoefficients && editCoefficients && (
+                  <span className="text-xs text-blue-500 font-normal">
+                    (已启用)
+                  </span>
+                )}
+              </button>
+              {showCoefficients && (
+                <div className="mt-3">
+                  {form.topAssemblyId && (
+                    <CostCoefficientEditor
+                      coefficients={editCoefficients}
+                      onChange={setEditCoefficients}
+                      materialCost={form.topAssemblyId ? calculateProductCost(form.topAssemblyId, state) : 0}
+                    />
+                  )}
+                  {!form.topAssemblyId && (
+                    <p className="text-xs text-slate-400 py-2">请先选择关联BOM组件</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
