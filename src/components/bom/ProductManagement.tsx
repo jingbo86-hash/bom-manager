@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useAppState } from '@/lib/store';
 import { generateId, generateProductCode, calculateProductCost, calculateCostBreakdown } from '@/lib/bom-utils';
 import type { Product, CostCoefficients } from '@/lib/types';
@@ -114,6 +114,48 @@ export function ProductManagement() {
     const url = prompt('请输入图片URL:');
     if (url && url.trim()) {
       setForm(f => ({ ...f, images: [...f.images, url.trim()] }));
+    }
+  };
+
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 前端校验
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('仅支持 JPG/PNG/GIF/WebP/SVG 格式图片');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('图片大小不能超过 5MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.imageUrl) {
+        setForm(f => ({ ...f, images: [...f.images, data.imageUrl] }));
+      } else {
+        alert(data.error || '上传失败');
+      }
+    } catch {
+      alert('上传图片失败，请重试');
+    } finally {
+      setUploading(false);
+      // 重置 input 以便再次选择同一文件
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -378,6 +420,31 @@ export function ProductManagement() {
                     </button>
                   </div>
                 ))}
+                {/* 本地图片上传 */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  id="product-image-upload"
+                />
+                <label
+                  htmlFor="product-image-upload"
+                  className={`w-16 h-16 border-2 border-dashed border-slate-300 rounded-md flex items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-colors cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+                  title="从本地上传图片"
+                >
+                  {uploading ? (
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </label>
                 <button
                   type="button"
                   onClick={handleImageUrlAdd}
@@ -400,7 +467,7 @@ export function ProductManagement() {
                   </svg>
                 </button>
               </div>
-              <p className="text-[10px] text-slate-400">支持添加图片URL或AI生成产品图片</p>
+              <p className="text-[10px] text-slate-400">支持本地图片上传、图片URL或AI生成产品图片</p>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">关联BOM组件 <span className="text-red-500">*</span></Label>
