@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useAppState } from '@/lib/store';
-import { generateId, generateAssemblyCode, calculateAssemblyCost, buildBomTree, wouldExceedMaxDepth } from '@/lib/bom-utils';
+import { generateId, generateAssemblyCode, calculateAssemblyCost, buildBomTree } from '@/lib/bom-utils';
 import type { Assembly, BomEntry, BomTreeNode } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,13 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { MultiSelectEntryDialog } from './MultiSelectEntryDialog';
 
 interface Props {
   highlightedPartId: string | null;
@@ -32,12 +26,6 @@ export function BomManagement({ highlightedPartId }: Props) {
   const [entryDialogOpen, setEntryDialogOpen] = useState(false);
   const [editingAssembly, setEditingAssembly] = useState<Assembly | null>(null);
   const [assemblyForm, setAssemblyForm] = useState({ code: '', name: '', description: '' });
-  const [entryForm, setEntryForm] = useState({
-    childId: '',
-    childType: 'part' as 'part' | 'assembly',
-    quantity: 1,
-    wasteRate: 0,
-  });
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'assembly' | 'entry'; id: string } | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
@@ -143,44 +131,17 @@ export function BomManagement({ highlightedPartId }: Props) {
 
   // BOM 条目 CRUD
   const openAddEntry = () => {
-    setEntryForm({ childId: '', childType: 'part', quantity: 1, wasteRate: 0 });
     setEntryDialogOpen(true);
   };
 
-  const handleSaveEntry = () => {
-    if (!selectedAssemblyId || !entryForm.childId) return;
-    if (entryForm.childType === 'assembly' && wouldExceedMaxDepth(
-      selectedAssemblyId, entryForm.childId, 'assembly', state.bomEntries
-    )) {
-      alert('添加此条目将超过最大10层深度限制');
-      return;
-    }
-    const entry: BomEntry = {
-      id: generateId(),
-      parentId: selectedAssemblyId,
-      childId: entryForm.childId,
-      childType: entryForm.childType,
-      quantity: entryForm.quantity,
-      wasteRate: entryForm.wasteRate,
-    };
-    dispatch({ type: 'ADD_BOM_ENTRY', payload: entry });
-    setEntryDialogOpen(false);
+  const handleAddEntries = (entries: BomEntry[]) => {
+    entries.forEach(entry => dispatch({ type: 'ADD_BOM_ENTRY', payload: entry }));
   };
 
   const handleDeleteEntry = (id: string) => {
     dispatch({ type: 'DELETE_BOM_ENTRY', payload: id });
     setDeleteConfirm(null);
   };
-
-  // 可选的子件列表
-  const availableChildren = useMemo(() => {
-    if (!selectedAssemblyId) return { parts: state.parts, assemblies: [] as Assembly[] };
-    const usedChildIds = new Set(directEntries.map(e => e.childId));
-    return {
-      parts: state.parts.filter(p => !usedChildIds.has(p.id)),
-      assemblies: state.assemblies.filter(a => a.id !== selectedAssemblyId && !usedChildIds.has(a.id)),
-    };
-  }, [state.parts, state.assemblies, directEntries, selectedAssemblyId]);
 
   // 渲染树节点
   const renderTreeNode = (node: BomTreeNode, depth: number = 0) => {
@@ -506,97 +467,15 @@ export function BomManagement({ highlightedPartId }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* 添加子件对话框 */}
-      <Dialog open={entryDialogOpen} onOpenChange={setEntryDialogOpen}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>添加子件到 {selectedAssembly?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-3 py-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs">子件类型</Label>
-              <Select
-                value={entryForm.childType}
-                onValueChange={v => setEntryForm(f => ({ ...f, childType: v as 'part' | 'assembly', childId: '' }))}
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="part">零件</SelectItem>
-                  <SelectItem value="assembly">组件/半成品</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">选择子件</Label>
-              <Select value={entryForm.childId} onValueChange={v => setEntryForm(f => ({ ...f, childId: v }))}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="请选择..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {entryForm.childType === 'part' ? (
-                    availableChildren.parts.map(p => (
-                      <SelectItem key={p.id} value={p.id}>
-                        [{p.code}] {p.name} (¥{p.price.toFixed(2)})
-                      </SelectItem>
-                    ))
-                  ) : (
-                    availableChildren.assemblies.map(a => (
-                      <SelectItem key={a.id} value={a.id}>
-                        [{a.code}] {a.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              {entryForm.childType === 'part' && availableChildren.parts.length === 0 && (
-                <p className="text-xs text-slate-400">所有零件已添加或零件库为空</p>
-              )}
-              {entryForm.childType === 'assembly' && availableChildren.assemblies.length === 0 && (
-                <p className="text-xs text-slate-400">无可用组件</p>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">用量</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={entryForm.quantity}
-                  onChange={e => setEntryForm(f => ({ ...f, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
-                  className="h-9"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">损耗率(%)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  value={entryForm.wasteRate * 100 || ''}
-                  onChange={e => setEntryForm(f => ({ ...f, wasteRate: Math.min(100, parseFloat(e.target.value) || 0) / 100 }))}
-                  placeholder="0"
-                  className="h-9"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" size="sm" onClick={() => setEntryDialogOpen(false)}>取消</Button>
-            <Button
-              size="sm"
-              onClick={handleSaveEntry}
-              disabled={!entryForm.childId}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              添加
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* 多选添加子件对话框 */}
+      {selectedAssembly && (
+        <MultiSelectEntryDialog
+          open={entryDialogOpen}
+          onOpenChange={setEntryDialogOpen}
+          parentAssembly={selectedAssembly}
+          onConfirm={handleAddEntries}
+        />
+      )}
 
       {/* 删除确认 */}
       <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
