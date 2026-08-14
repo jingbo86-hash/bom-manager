@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useReducer, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { AppState, Part, Assembly, BomEntry, Product, Quote, CostCoefficients } from './types';
 
 // ============================================================
@@ -42,6 +42,40 @@ type Action =
   | { type: 'DELETE_PRODUCT'; payload: string }
   | { type: 'UPDATE_DEFAULT_COEFFICIENTS'; payload: CostCoefficients }
   | { type: 'ADD_QUOTE'; payload: Quote };
+
+// ============================================================
+// API 工具函数
+// ============================================================
+async function apiCall(type: string, action: string, data?: any, id?: string) {
+  const res = await fetch('/api/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, action, data, id }),
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.error || 'API error');
+  return result;
+}
+
+async function loadAllFromDB(): Promise<AppState> {
+  const [parts, assemblies, bomEntries, products, quotes, coeff] = await Promise.all([
+    apiCall('parts', 'getAll'),
+    apiCall('assemblies', 'getAll'),
+    apiCall('bomEntries', 'getAll'),
+    apiCall('products', 'getAll'),
+    apiCall('quotes', 'getAll'),
+    apiCall('coefficients', 'getAll'),
+  ]);
+
+  return {
+    parts: parts.data || [],
+    assemblies: assemblies.data || [],
+    bomEntries: bomEntries.data || [],
+    products: products.data || [],
+    quotes: quotes.data || [],
+    defaultCoefficients: coeff.data || initialState.defaultCoefficients,
+  };
+}
 
 // ============================================================
 // Reducer
@@ -143,39 +177,68 @@ function appReducer(state: AppState, action: Action): AppState {
 interface AppContextType {
   state: AppState;
   dispatch: React.Dispatch<Action>;
+  loading: boolean;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
 
-const STORAGE_KEY = 'bom-management-system';
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
+  const [loading, setLoading] = useState(true);
+  const persistTimer = useRef<NodeJS.Timeout | null>(null);
+  const prevStateRef = useRef<AppState>(initialState);
 
-  // 从 localStorage 加载
+  // 从 MySQL 加载
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as AppState;
-        dispatch({ type: 'LOAD_STATE', payload: parsed });
-      }
-    } catch {
-      // ignore
-    }
+    loadAllFromDB()
+      .then(data => {
+        dispatch({ type: 'LOAD_STATE', payload: data });
+        prevStateRef.current = data;
+      })
+      .catch(err => {
+        console.error('Failed to load from MySQL, falling back to localStorage:', err);
+        // 回退到 localStorage
+        try {
+          const saved = localStorage.getItem('bom-management-system');
+          if (saved) {
+            const parsed = JSON.parse(saved) as AppState;
+            dispatch({ type: 'LOAD_STATE', payload: parsed });
+            prevStateRef.current = parsed;
+          }
+        } catch { /* ignore */ }
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  // 保存到 localStorage
+  // 持久化到 MySQL（防抖）
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // ignore
-    }
-  }, [state]);
+    if (loading) return;
+    if (state === prevStateRef.current) return;
+    prevStateRef.current = state;
+
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(async () => {
+      try {
+        // 批量同步所有数据到 MySQL
+        const { parts, assemblies, bomEntries, products, quotes, defaultCoefficients } = state;
+
+        // 使用 batchCreate 全量覆盖
+        await Promise.all([
+          parts.length > 0 ? apiCall('parts', 'batchCreate', parts) : Promise.resolve(),
+          assemblies.length > 0 ? apiCall('assemblies', 'batchCreate', assemblies) : Promise.resolve(),
+          bomEntries.length > 0 ? apiCall('bomEntries', 'batchCreate', bomEntries) : Promise.resolve(),
+          products.length > 0 ? apiCall('products', 'batchCreate', products) : Promise.resolve(),
+          quotes.length > 0 ? apiCall('quotes', 'batchCreate', quotes) : Promise.resolve(),
+          apiCall('coefficients', 'create', defaultCoefficients),
+        ]);
+      } catch (err) {
+        console.error('Failed to persist to MySQL:', err);
+      }
+    }, 1000);
+  }, [state, loading]);
 
   return (
-    <AppContext.Provider value={{ state, dispatch }}>
+    <AppContext.Provider value={{ state, dispatch, loading }}>
       {children}
     </AppContext.Provider>
   );
@@ -186,3 +249,4 @@ export function useAppState() {
   if (!ctx) throw new Error('useAppState must be used within AppProvider');
   return ctx;
 }
+
