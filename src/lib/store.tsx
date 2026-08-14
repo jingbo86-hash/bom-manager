@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useReducer, useEffect, useRef, useState, type ReactNode } from 'react';
-import type { AppState, Part, Assembly, BomEntry, Product, Quote, CostCoefficients } from './types';
+import type { AppState, Part, Assembly, BomEntry, Product, Quote, Category, CostCoefficients } from './types';
 
 // ============================================================
 // 初始状态
@@ -12,6 +12,7 @@ const initialState: AppState = {
   bomEntries: [],
   products: [],
   quotes: [],
+  categories: [],
   defaultCoefficients: {
     labor: 10,
     waste: 2,
@@ -41,7 +42,10 @@ type Action =
   | { type: 'UPDATE_PRODUCT'; payload: Product }
   | { type: 'DELETE_PRODUCT'; payload: string }
   | { type: 'UPDATE_DEFAULT_COEFFICIENTS'; payload: CostCoefficients }
-  | { type: 'ADD_QUOTE'; payload: Quote };
+  | { type: 'ADD_QUOTE'; payload: Quote }
+  | { type: 'ADD_CATEGORY'; payload: Category }
+  | { type: 'UPDATE_CATEGORY'; payload: Category }
+  | { type: 'DELETE_CATEGORY'; payload: string };
 
 // ============================================================
 // API 工具函数
@@ -58,12 +62,13 @@ async function apiCall(type: string, action: string, data?: any, id?: string) {
 }
 
 async function loadAllFromDB(): Promise<AppState> {
-  const [parts, assemblies, bomEntries, products, quotes, coeff] = await Promise.all([
+  const [parts, assemblies, bomEntries, products, quotes, categories, coeff] = await Promise.all([
     apiCall('parts', 'getAll'),
     apiCall('assemblies', 'getAll'),
     apiCall('bomEntries', 'getAll'),
     apiCall('products', 'getAll'),
     apiCall('quotes', 'getAll'),
+    apiCall('categories', 'getAll'),
     apiCall('coefficients', 'getAll'),
   ]);
 
@@ -73,6 +78,7 @@ async function loadAllFromDB(): Promise<AppState> {
     bomEntries: bomEntries.data || [],
     products: products.data || [],
     quotes: quotes.data || [],
+    categories: categories.data || [],
     defaultCoefficients: coeff.data || initialState.defaultCoefficients,
   };
 }
@@ -166,6 +172,28 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'ADD_QUOTE':
       return { ...state, quotes: [...state.quotes, action.payload] };
 
+    // 目录
+    case 'ADD_CATEGORY':
+      return { ...state, categories: [...state.categories, action.payload] };
+    case 'UPDATE_CATEGORY':
+      return {
+        ...state,
+        categories: state.categories.map(c => c.id === action.payload.id ? action.payload : c),
+      };
+    case 'DELETE_CATEGORY': {
+      const idsToRemove = new Set<string>();
+      const collect = (parentId: string) => {
+        idsToRemove.add(parentId);
+        state.categories.filter(c => c.parentId === parentId).forEach(c => collect(c.id));
+      };
+      collect(action.payload);
+      return {
+        ...state,
+        categories: state.categories.filter(c => !idsToRemove.has(c.id)),
+        parts: state.parts.map(p => idsToRemove.has(p.categoryId) ? { ...p, categoryId: '' } : p),
+      };
+    }
+
     default:
       return state;
   }
@@ -220,7 +248,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     persistTimer.current = setTimeout(async () => {
       try {
         // 批量同步所有数据到 MySQL
-        const { parts, assemblies, bomEntries, products, quotes, defaultCoefficients } = state;
+        const { parts, assemblies, bomEntries, products, quotes, categories, defaultCoefficients } = state;
 
         // 使用 batchCreate 全量覆盖
         await Promise.all([
@@ -229,6 +257,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           bomEntries.length > 0 ? apiCall('bomEntries', 'batchCreate', bomEntries) : Promise.resolve(),
           products.length > 0 ? apiCall('products', 'batchCreate', products) : Promise.resolve(),
           quotes.length > 0 ? apiCall('quotes', 'batchCreate', quotes) : Promise.resolve(),
+          categories.length > 0 ? apiCall('categories', 'batchCreate', categories) : Promise.resolve(),
           apiCall('coefficients', 'create', defaultCoefficients),
         ]);
       } catch (err) {

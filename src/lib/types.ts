@@ -2,6 +2,15 @@
 // BOM 管理系统 - 数据类型定义
 // ============================================================
 
+/** 目录/分类（多级树形结构） */
+export interface Category {
+  id: string;
+  name: string;          // 目录名称
+  parentId: string | null; // 父级目录ID（null为根级）
+  createdAt: number;
+  updatedAt: number;
+}
+
 /** 基础零件（最底层物料） */
 export interface Part {
   id: string;
@@ -12,6 +21,7 @@ export interface Part {
   price: number;       // 单价
   supplier: string;    // 供应商
   remark: string;      // 备注
+  categoryId: string;  // 所属目录ID（空字符串表示未分类）
   createdAt: number;
   updatedAt: number;
 }
@@ -154,5 +164,6 @@ export interface AppState {
   bomEntries: BomEntry[];
   products: Product[];
   quotes: Quote[];
+  categories: Category[];
   defaultCoefficients: CostCoefficients;
 }

@@ -8,6 +8,7 @@ const TABLE_MAP: Record<string, string> = {
   bomEntries: 'bom_entries',
   products: 'products',
   quotes: 'quotes',
+  categories: 'categories',
   coefficients: 'default_coefficients',
 };
 
@@ -15,6 +16,12 @@ const TABLE_MAP: Record<string, string> = {
 const FIELD_MAP: Record<string, Record<string, string>> = {
   parts: {
     supplier: 'supplier',
+    categoryId: 'category_id',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  },
+  categories: {
+    parentId: 'parent_id',
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   },
@@ -94,7 +101,8 @@ export async function POST(request: NextRequest) {
           const row = await getOne(sql);
           return NextResponse.json({ data: row ? rowToCamel(row) : null });
         }
-        sql = `SELECT * FROM \`${table}\` ORDER BY created_at DESC`;
+        const orderCol = table === 'bom_entries' ? 'id' : 'created_at';
+        sql = `SELECT * FROM \`${table}\` ORDER BY \`${orderCol}\` DESC`;
         const rows = await query(sql);
         return NextResponse.json({ data: rows.map(rowToCamel) });
       }
@@ -186,7 +194,8 @@ export async function POST(request: NextRequest) {
             values
           );
         }
-        const rows = await query(`SELECT * FROM \`${table}\` ORDER BY created_at DESC`);
+        const orderCol = table === 'bom_entries' ? 'id' : 'created_at';
+        const rows = await query(`SELECT * FROM \`${table}\` ORDER BY \`${orderCol}\` DESC`);
         return NextResponse.json({ data: rows.map(rowToCamel) });
       }
 
