@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useAppState } from '@/lib/store';
-import { generateId, calculateAssemblyCost, buildBomTree, wouldExceedMaxDepth } from '@/lib/bom-utils';
+import { generateId, generateAssemblyCode, calculateAssemblyCost, buildBomTree, wouldExceedMaxDepth } from '@/lib/bom-utils';
 import type { Assembly, BomEntry, BomTreeNode } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -104,7 +104,7 @@ export function BomManagement({ highlightedPartId }: Props) {
   // 组件 CRUD
   const openAddAssembly = () => {
     setEditingAssembly(null);
-    setAssemblyForm({ code: '', name: '', description: '' });
+    setAssemblyForm({ code: generateAssemblyCode(state.assemblies), name: '', description: '' });
     setAssemblyDialogOpen(true);
   };
 
@@ -465,9 +465,13 @@ export function BomManagement({ highlightedPartId }: Props) {
               <Input
                 value={assemblyForm.code}
                 onChange={e => setAssemblyForm(f => ({ ...f, code: e.target.value }))}
-                placeholder="如: ASM-001"
-                className="h-9"
+                placeholder="如: ASM-000001"
+                className="h-9 font-mono text-xs"
+                disabled={!editingAssembly}
               />
+              {!editingAssembly && (
+                <p className="text-[10px] text-slate-400">自动生成，不可修改</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">组件名称 <span className="text-red-500">*</span></Label>

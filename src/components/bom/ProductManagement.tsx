@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useAppState } from '@/lib/store';
-import { generateId, calculateProductCost } from '@/lib/bom-utils';
+import { generateId, generateProductCode, calculateProductCost } from '@/lib/bom-utils';
 import type { Product } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { BatchImportDialog, type ImportRow } from './BatchImportDialog';
+
+const PRODUCT_IMPORT_COLUMNS = [
+  { key: 'name', label: '产品名称', required: true, sample: '智能设备控制器' },
+  { key: 'model', label: '产品型号', required: false, sample: 'CTRL-2000' },
+  { key: 'assemblyName', label: '关联BOM组件名称', required: false, sample: '控制器总成' },
+  { key: 'description', label: '描述', required: false, sample: '用于智能设备控制的核心模块' },
+];
 
 export function ProductManagement() {
   const { state, dispatch } = useAppState();
@@ -33,6 +41,7 @@ export function ProductManagement() {
     topAssemblyId: '',
   });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   // 可关联的顶级组件（没有被其他产品引用的组件）
   const availableAssemblies = useMemo(() => {
@@ -46,7 +55,13 @@ export function ProductManagement() {
 
   const openAdd = () => {
     setEditingProduct(null);
-    setForm({ code: '', name: '', model: '', description: '', topAssemblyId: '' });
+    setForm({
+      code: generateProductCode(state.products),
+      name: '',
+      model: '',
+      description: '',
+      topAssemblyId: '',
+    });
     setDialogOpen(true);
   };
 
@@ -88,22 +103,65 @@ export function ProductManagement() {
     setDeleteConfirm(null);
   };
 
+  /** 批量导入产品 */
+  const handleBatchImport = async (rows: ImportRow[]) => {
+    const now = Date.now();
+    const validRows = rows.filter(r => r.errors.length === 0);
+    const newProducts: Product[] = [];
+
+    for (const row of validRows) {
+      const assemblyName = row.data.assemblyName || '';
+      const assembly = assemblyName
+        ? state.assemblies.find(a => a.name.includes(assemblyName) || assemblyName.includes(a.name))
+        : null;
+
+      const code = generateProductCode([...state.products, ...newProducts]);
+      newProducts.push({
+        id: generateId(),
+        code,
+        name: row.data.name || '未命名',
+        model: row.data.model || '',
+        description: row.data.description || '',
+        topAssemblyId: assembly?.id || '',
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    for (const product of newProducts) {
+      dispatch({ type: 'ADD_PRODUCT', payload: product });
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* 工具栏 */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-slate-500">共 {state.products.length} 个产品</div>
-        <Button
-          onClick={openAdd}
-          size="sm"
-          className="bg-blue-600 hover:bg-blue-700"
-          disabled={state.assemblies.length === 0}
-        >
-          <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          添加产品
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setImportDialogOpen(true)}
+            disabled={state.assemblies.length === 0}
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            批量导入
+          </Button>
+          <Button
+            onClick={openAdd}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={state.assemblies.length === 0}
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            添加产品
+          </Button>
+        </div>
       </div>
 
       {state.assemblies.length === 0 && (
@@ -124,14 +182,14 @@ export function ProductManagement() {
               className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between mb-3">
-                <div>
+                <div className="min-w-0">
                   <p className="font-mono text-xs text-blue-600 font-medium">{product.code}</p>
-                  <h3 className="text-base font-semibold text-slate-800 mt-0.5">{product.name}</h3>
+                  <h3 className="text-base font-semibold text-slate-800 mt-0.5 truncate">{product.name}</h3>
                   {product.model && (
                     <p className="text-xs text-slate-400 mt-0.5">型号: {product.model}</p>
                   )}
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 flex-shrink-0">
                   <button
                     onClick={() => openEdit(product)}
                     className="p-1.5 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-600"
@@ -172,7 +230,7 @@ export function ProductManagement() {
 
       {state.products.length === 0 && state.assemblies.length > 0 && (
         <div className="text-center py-12">
-          <p className="text-sm text-slate-400">暂无产品，点击"添加产品"创建</p>
+          <p className="text-sm text-slate-400">暂无产品，点击"添加产品"或"批量导入"创建</p>
         </div>
       )}
 
@@ -185,13 +243,17 @@ export function ProductManagement() {
           <div className="grid gap-3 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">产品编号 <span className="text-red-500">*</span></Label>
+                <Label className="text-xs">产品编号</Label>
                 <Input
                   value={form.code}
                   onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
-                  placeholder="如: PRD-001"
-                  className="h-9"
+                  placeholder="如: PRD-000001"
+                  className="h-9 font-mono text-xs"
+                  disabled={!editingProduct}
                 />
+                {!editingProduct && (
+                  <p className="text-[10px] text-slate-400">自动生成，不可修改</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">产品名称 <span className="text-red-500">*</span></Label>
@@ -270,6 +332,17 @@ export function ProductManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 批量导入对话框 */}
+      <BatchImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        title="批量导入产品"
+        description="上传Excel或CSV文件，批量导入产品。可选择关联现有的BOM组件。"
+        templateFileName="产品导入模板.xlsx"
+        columns={PRODUCT_IMPORT_COLUMNS}
+        onImport={handleBatchImport}
+      />
     </div>
   );
 }

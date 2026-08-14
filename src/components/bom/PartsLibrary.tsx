@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useAppState } from '@/lib/store';
-import { generateId } from '@/lib/bom-utils';
+import { generateId, generatePartCode } from '@/lib/bom-utils';
 import type { Part } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { BatchImportDialog, type ImportRow } from './BatchImportDialog';
 
 const UNITS = ['个', '件', '套', '米', '千克', '克', '卷', '箱', '台', '组'];
 
@@ -35,7 +36,7 @@ interface Props {
   onPriceChange: (partId: string) => void;
 }
 
-const emptyPart: Omit<Part, 'id' | 'createdAt' | 'updatedAt'> = {
+const emptyPart = {
   code: '',
   name: '',
   spec: '',
@@ -43,6 +44,26 @@ const emptyPart: Omit<Part, 'id' | 'createdAt' | 'updatedAt'> = {
   price: 0,
   supplier: '',
   remark: '',
+};
+
+/** 零件导入列定义 */
+const PART_IMPORT_COLUMNS = [
+  { key: 'name', label: '零件名称', required: true, sample: '螺丝M6' },
+  { key: 'spec', label: '规格型号', required: true, sample: 'M6×20 304不锈钢' },
+  { key: 'unit', label: '单位', required: true, sample: '个' },
+  { key: 'price', label: '单价', required: true, sample: '0.50' },
+  { key: 'supplier', label: '供应商', required: false, sample: 'XX五金' },
+  { key: 'remark', label: '备注', required: false, sample: '标准件' },
+];
+
+/** 用户材料清单格式的字段映射 */
+const PART_FIELD_MAPPING: Record<string, string> = {
+  name: '名称',
+  spec: '规格',
+  unit: '单位',
+  price: '单价',
+  supplier: '厂商',
+  remark: '备注',
 };
 
 export function PartsLibrary({ onPriceChange }: Props) {
@@ -53,6 +74,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [form, setForm] = useState(emptyPart);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const filteredParts = useMemo(() => {
     return state.parts.filter(p => {
@@ -68,7 +90,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
 
   const openAdd = () => {
     setEditingPart(null);
-    setForm(emptyPart);
+    setForm({ ...emptyPart, code: generatePartCode(state.parts) });
     setDialogOpen(true);
   };
 
@@ -114,6 +136,35 @@ export function PartsLibrary({ onPriceChange }: Props) {
     setDeleteConfirm(null);
   };
 
+  /** 执行批量导入 */
+  const handleBatchImport = async (rows: ImportRow[]) => {
+    const now = Date.now();
+    const validRows = rows.filter(r => r.errors.length === 0);
+    const newParts: Part[] = [];
+
+    for (const row of validRows) {
+      const price = parseFloat(row.data.price) || 0;
+      const code = generatePartCode([...state.parts, ...newParts]);
+      newParts.push({
+        id: generateId(),
+        code,
+        name: row.data.name || '未命名',
+        spec: row.data.spec || '',
+        unit: row.data.unit || '个',
+        price: Math.max(0, price),
+        supplier: row.data.supplier || '',
+        remark: row.data.remark || '',
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    // 批量添加
+    for (const part of newParts) {
+      dispatch({ type: 'ADD_PART', payload: part });
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* 工具栏 */}
@@ -141,6 +192,17 @@ export function PartsLibrary({ onPriceChange }: Props) {
           </SelectContent>
         </Select>
         <div className="flex-1" />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setImportDialogOpen(true)}
+          className="h-9"
+        >
+          <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          批量导入
+        </Button>
         <Button onClick={openAdd} size="sm" className="bg-blue-600 hover:bg-blue-700">
           <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -174,7 +236,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
             {filteredParts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-12 text-slate-400">
-                  {state.parts.length === 0 ? '暂无零件，点击"添加零件"开始' : '未找到匹配的零件'}
+                  {state.parts.length === 0 ? '暂无零件，点击"添加零件"或"批量导入"开始' : '未找到匹配的零件'}
                 </TableCell>
               </TableRow>
             ) : (
@@ -227,13 +289,17 @@ export function PartsLibrary({ onPriceChange }: Props) {
           <div className="grid gap-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">零件编号 <span className="text-red-500">*</span></Label>
+                <Label className="text-xs">零件编号</Label>
                 <Input
                   value={form.code}
                   onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
-                  placeholder="如: P-001"
-                  className="h-9"
+                  placeholder="如: PRT-000001"
+                  className="h-9 font-mono text-xs"
+                  disabled={!editingPart}
                 />
+                {!editingPart && (
+                  <p className="text-[10px] text-slate-400">自动生成，不可修改</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">名称 <span className="text-red-500">*</span></Label>
@@ -335,6 +401,18 @@ export function PartsLibrary({ onPriceChange }: Props) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 批量导入对话框 */}
+      <BatchImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        title="批量导入零件"
+        description="上传Excel或CSV文件，批量导入零件。支持标准格式和材料清单格式的自动识别。"
+        templateFileName="零件导入模板.xlsx"
+        columns={PART_IMPORT_COLUMNS}
+        fieldMapping={PART_FIELD_MAPPING}
+        onImport={handleBatchImport}
+      />
     </div>
   );
 }

@@ -1,10 +1,46 @@
-import type { Part, Assembly, BomEntry, BomTreeNode, QuoteItem, AppState } from './types';
+import type { Part, Assembly, BomEntry, BomTreeNode, QuoteItem, AppState, Product } from './types';
 
 // ============================================================
 // ID 生成
 // ============================================================
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+}
+
+// ============================================================
+// 自动编号生成
+// ============================================================
+
+/** 根据已有编号列表生成下一个编号 */
+function generateNextCode(
+  existingCodes: string[],
+  prefix: string,
+  padLength: number = 6
+): string {
+  const maxNum = existingCodes
+    .filter(c => c.startsWith(prefix))
+    .map(c => {
+      const num = parseInt(c.slice(prefix.length), 10);
+      return isNaN(num) ? 0 : num;
+    })
+    .reduce((max, n) => Math.max(max, n), 0);
+
+  return prefix + String(maxNum + 1).padStart(padLength, '0');
+}
+
+/** 生成零件编号 */
+export function generatePartCode(parts: Part[]): string {
+  return generateNextCode(parts.map(p => p.code), 'PRT-');
+}
+
+/** 生成组件编号 */
+export function generateAssemblyCode(assemblies: Assembly[]): string {
+  return generateNextCode(assemblies.map(a => a.code), 'ASM-');
+}
+
+/** 生成产品编号 */
+export function generateProductCode(products: Product[]): string {
+  return generateNextCode(products.map(p => p.code), 'PRD-');
 }
 
 // ============================================================
