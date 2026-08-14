@@ -1,5 +1,21 @@
 # 项目上下文
 
+## 项目概览
+
+多级BOM（物料清单）管理与报价系统，面向工程/制造行业。
+
+### 核心模块
+- **零件库管理** (`src/components/bom/PartsLibrary.tsx`): 零件CRUD、搜索筛选
+- **BOM管理** (`src/components/bom/BomManagement.tsx`): 组件创建、BOM树形结构、最多10层
+- **产品管理** (`src/components/bom/ProductManagement.tsx`): 产品与BOM关联
+- **报价清单** (`src/components/bom/QuoteSheet.tsx`): 报价生成、打印/PDF导出
+
+### 核心文件
+- `src/lib/types.ts` - 数据类型定义
+- `src/lib/store.tsx` - React Context + localStorage 状态管理
+- `src/lib/bom-utils.ts` - BOM计算引擎（级联成本计算、树构建）
+- `src/app/page.tsx` - 主页面（侧边导航 + 页面切换）
+
 ### 版本技术栈
 
 - **Framework**: Next.js 16 (App Router)

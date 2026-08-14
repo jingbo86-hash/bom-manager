@@ -1,0 +1,340 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { useAppState } from '@/lib/store';
+import { generateId } from '@/lib/bom-utils';
+import type { Part } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const UNITS = ['个', '件', '套', '米', '千克', '克', '卷', '箱', '台', '组'];
+
+interface Props {
+  onPriceChange: (partId: string) => void;
+}
+
+const emptyPart: Omit<Part, 'id' | 'createdAt' | 'updatedAt'> = {
+  code: '',
+  name: '',
+  spec: '',
+  unit: '个',
+  price: 0,
+  supplier: '',
+  remark: '',
+};
+
+export function PartsLibrary({ onPriceChange }: Props) {
+  const { state, dispatch } = useAppState();
+  const [search, setSearch] = useState('');
+  const [filterUnit, setFilterUnit] = useState<string>('all');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingPart, setEditingPart] = useState<Part | null>(null);
+  const [form, setForm] = useState(emptyPart);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const filteredParts = useMemo(() => {
+    return state.parts.filter(p => {
+      const matchSearch = search === '' ||
+        p.code.toLowerCase().includes(search.toLowerCase()) ||
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.spec.toLowerCase().includes(search.toLowerCase()) ||
+        p.supplier.toLowerCase().includes(search.toLowerCase());
+      const matchUnit = filterUnit === 'all' || p.unit === filterUnit;
+      return matchSearch && matchUnit;
+    });
+  }, [state.parts, search, filterUnit]);
+
+  const openAdd = () => {
+    setEditingPart(null);
+    setForm(emptyPart);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (part: Part) => {
+    setEditingPart(part);
+    setForm({
+      code: part.code,
+      name: part.name,
+      spec: part.spec,
+      unit: part.unit,
+      price: part.price,
+      supplier: part.supplier,
+      remark: part.remark,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!form.code.trim() || !form.name.trim()) return;
+    const now = Date.now();
+
+    if (editingPart) {
+      const oldPrice = editingPart.price;
+      const updated: Part = { ...editingPart, ...form, updatedAt: now };
+      dispatch({ type: 'UPDATE_PART', payload: updated });
+      if (oldPrice !== form.price) {
+        onPriceChange(editingPart.id);
+      }
+    } else {
+      const newPart: Part = {
+        id: generateId(),
+        ...form,
+        createdAt: now,
+        updatedAt: now,
+      };
+      dispatch({ type: 'ADD_PART', payload: newPart });
+    }
+    setDialogOpen(false);
+  };
+
+  const handleDelete = (id: string) => {
+    dispatch({ type: 'DELETE_PART', payload: id });
+    setDeleteConfirm(null);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* 工具栏 */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <Input
+            placeholder="搜索编号、名称、规格、供应商..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+        <Select value={filterUnit} onValueChange={setFilterUnit}>
+          <SelectTrigger className="w-[120px] h-9">
+            <SelectValue placeholder="单位筛选" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部单位</SelectItem>
+            {UNITS.map(u => (
+              <SelectItem key={u} value={u}>{u}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex-1" />
+        <Button onClick={openAdd} size="sm" className="bg-blue-600 hover:bg-blue-700">
+          <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          添加零件
+        </Button>
+      </div>
+
+      {/* 统计 */}
+      <div className="flex gap-4 text-xs text-slate-500">
+        <span>共 {state.parts.length} 个零件</span>
+        {search && <span>筛选结果: {filteredParts.length} 个</span>}
+      </div>
+
+      {/* 表格 */}
+      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+              <TableHead className="font-semibold text-slate-600">零件编号</TableHead>
+              <TableHead className="font-semibold text-slate-600">名称</TableHead>
+              <TableHead className="font-semibold text-slate-600">规格型号</TableHead>
+              <TableHead className="font-semibold text-slate-600 w-16">单位</TableHead>
+              <TableHead className="font-semibold text-slate-600 text-right">单价(元)</TableHead>
+              <TableHead className="font-semibold text-slate-600">供应商</TableHead>
+              <TableHead className="font-semibold text-slate-600">备注</TableHead>
+              <TableHead className="w-24 text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredParts.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-12 text-slate-400">
+                  {state.parts.length === 0 ? '暂无零件，点击"添加零件"开始' : '未找到匹配的零件'}
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredParts.map(part => (
+                <TableRow key={part.id} className="group">
+                  <TableCell className="font-mono text-xs text-blue-600 font-medium">{part.code}</TableCell>
+                  <TableCell className="font-medium">{part.name}</TableCell>
+                  <TableCell className="text-slate-500 text-sm">{part.spec}</TableCell>
+                  <TableCell className="text-slate-500 text-sm">{part.unit}</TableCell>
+                  <TableCell className="text-right font-mono text-sm font-medium text-amber-600">
+                    {part.price.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-slate-500 text-sm">{part.supplier || '-'}</TableCell>
+                  <TableCell className="text-slate-400 text-sm max-w-[150px] truncate">{part.remark || '-'}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => openEdit(part)}
+                        className="p-1.5 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
+                        title="编辑"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm(part.id)}
+                        className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                        title="删除"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* 添加/编辑对话框 */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>{editingPart ? '编辑零件' : '添加零件'}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">零件编号 <span className="text-red-500">*</span></Label>
+                <Input
+                  value={form.code}
+                  onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
+                  placeholder="如: P-001"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">名称 <span className="text-red-500">*</span></Label>
+                <Input
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="零件名称"
+                  className="h-9"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">规格型号</Label>
+                <Input
+                  value={form.spec}
+                  onChange={e => setForm(f => ({ ...f, spec: e.target.value }))}
+                  placeholder="规格型号"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">单位</Label>
+                <Select value={form.unit} onValueChange={v => setForm(f => ({ ...f, unit: v }))}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">单价(元)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={form.price || ''}
+                  onChange={e => setForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
+                  placeholder="0.00"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">供应商</Label>
+                <Input
+                  value={form.supplier}
+                  onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))}
+                  placeholder="供应商名称"
+                  className="h-9"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">备注</Label>
+              <Input
+                value={form.remark}
+                onChange={e => setForm(f => ({ ...f, remark: e.target.value }))}
+                placeholder="备注信息"
+                className="h-9"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={!form.code.trim() || !form.name.trim()}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {editingPart ? '保存' : '添加'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除确认 */}
+      <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <DialogContent className="sm:max-w-[360px]">
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-600 py-2">
+            确定要删除此零件吗？相关的BOM条目也会被移除。此操作不可撤销。
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDeleteConfirm(null)}>取消</Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+            >
+              删除
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

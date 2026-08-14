@@ -3,6 +3,27 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* BOM 系统自定义动画 */
+@keyframes cost-pulse {
+  0% { background-color: transparent; }
+  15% { background-color: rgba(16, 185, 129, 0.2); }
+  100% { background-color: transparent; }
+}
+
+@keyframes cost-pulse-amber {
+  0% { background-color: transparent; }
+  15% { background-color: rgba(245, 158, 11, 0.15); }
+  100% { background-color: transparent; }
+}
+
+.animate-cost-pulse {
+  animation: cost-pulse 2s ease-out;
+}
+
+.animate-cost-pulse-amber {
+  animation: cost-pulse-amber 2s ease-out;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
