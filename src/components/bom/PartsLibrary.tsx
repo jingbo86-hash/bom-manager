@@ -20,15 +20,17 @@ interface Props {
 
 const UNITS = ['个', '套', '件', '只', '米', '公斤', '块', '箱', '台', '根', '片', '卷', '条', '对', '组'];
 
-const emptyPart = { code: '', name: '', spec: '', unit: '个', price: 0, supplier: '', remark: '', categoryId: '' };
+const emptyPart = { code: '', name: '', spec: '', unit: '个', price: 0, quantity: 0, supplier: '', remark: '', purchaseLink: '', categoryId: '' };
 
 const PART_IMPORT_COLUMNS = [
   { key: 'name', label: '零件名称', required: true, sample: '螺丝M6' },
   { key: 'spec', label: '规格型号', required: true, sample: 'M6×20 304不锈钢' },
   { key: 'unit', label: '单位', required: true, sample: '个' },
   { key: 'price', label: '单价', required: true, sample: '0.50' },
+  { key: 'quantity', label: '数量', required: false, sample: '100' },
   { key: 'supplier', label: '供应商', required: false, sample: 'XX五金' },
   { key: 'remark', label: '备注', required: false, sample: '标准件' },
+  { key: 'purchaseLink', label: '采购链接', required: false, sample: 'https://...' },
 ];
 
 const PART_FIELD_MAPPING: Record<string, string> = {
@@ -36,8 +38,10 @@ const PART_FIELD_MAPPING: Record<string, string> = {
   spec: '规格',
   unit: '单位',
   price: '单价',
+  quantity: '数量',
   supplier: '厂商',
   remark: '备注',
+  purchaseLink: '采购链接',
 };
 
 export function PartsLibrary({ onPriceChange }: Props) {
@@ -93,8 +97,10 @@ export function PartsLibrary({ onPriceChange }: Props) {
       spec: part.spec,
       unit: part.unit,
       price: part.price,
+      quantity: part.quantity ?? 0,
       supplier: part.supplier,
       remark: part.remark,
+      purchaseLink: part.purchaseLink || '',
       categoryId: part.categoryId || '',
     });
     setDialogOpen(true);
@@ -143,8 +149,10 @@ export function PartsLibrary({ onPriceChange }: Props) {
         spec: row.data.spec || '',
         unit: row.data.unit || '个',
         price: Math.max(0, price),
+        quantity: parseFloat(row.data.quantity) || 0,
         supplier: row.data.supplier || '',
         remark: row.data.remark || '',
+        purchaseLink: row.data.purchaseLink || '',
         categoryId: selectedCategoryId || '',
         createdAt: now,
         updatedAt: now,
@@ -246,14 +254,16 @@ export function PartsLibrary({ onPriceChange }: Props) {
                 <TableHead className="font-semibold text-slate-600 w-16">单位</TableHead>
                 <TableHead className="font-semibold text-slate-600 text-right">单价(元)</TableHead>
                 <TableHead className="font-semibold text-slate-600">供应商</TableHead>
+                <TableHead className="font-semibold text-slate-600 text-right">数量</TableHead>
                 <TableHead className="font-semibold text-slate-600">备注</TableHead>
+                <TableHead className="font-semibold text-slate-600">采购链接</TableHead>
                 <TableHead className="w-24 text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredParts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12 text-slate-400">
+                  <TableCell colSpan={10} className="text-center py-12 text-slate-400">
                     {state.parts.length === 0 ? '暂无零件，点击"添加零件"或"批量导入"开始' : '未找到匹配的零件'}
                   </TableCell>
                 </TableRow>
@@ -268,7 +278,15 @@ export function PartsLibrary({ onPriceChange }: Props) {
                       {part.price.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-slate-500 text-sm">{part.supplier || '-'}</TableCell>
+                    <TableCell className="text-right font-mono text-sm text-slate-500">{part.quantity > 0 ? part.quantity : '-'}</TableCell>
                     <TableCell className="text-slate-400 text-sm max-w-[150px] truncate">{part.remark || '-'}</TableCell>
+                    <TableCell className="text-slate-400 text-sm max-w-[150px] truncate">
+                      {part.purchaseLink ? (
+                        <a href={part.purchaseLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate block">
+                          {part.purchaseLink}
+                        </a>
+                      ) : '-'}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
@@ -364,6 +382,19 @@ export function PartsLibrary({ onPriceChange }: Props) {
                     className="h-9"
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">数量</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={form.quantity || ''}
+                    onChange={e => setForm(f => ({ ...f, quantity: parseFloat(e.target.value) || 0 }))}
+                    placeholder="0"
+                    className="h-9"
+                  />
+                </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">供应商</Label>
                   <Input
@@ -394,6 +425,15 @@ export function PartsLibrary({ onPriceChange }: Props) {
                   value={form.remark}
                   onChange={e => setForm(f => ({ ...f, remark: e.target.value }))}
                   placeholder="备注信息"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">采购链接</Label>
+                <Input
+                  value={form.purchaseLink}
+                  onChange={e => setForm(f => ({ ...f, purchaseLink: e.target.value }))}
+                  placeholder="https://..."
                   className="h-9"
                 />
               </div>

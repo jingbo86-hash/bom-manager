@@ -14,14 +14,16 @@ export interface Category {
 /** 基础零件（最底层物料） */
 export interface Part {
   id: string;
-  code: string;        // 零件编号
-  name: string;        // 名称
-  spec: string;        // 规格型号
-  unit: string;        // 单位
-  price: number;       // 单价
-  supplier: string;    // 供应商
-  remark: string;      // 备注
-  categoryId: string;  // 所属目录ID（空字符串表示未分类）
+  code: string;          // 零件编号
+  name: string;          // 名称
+  spec: string;          // 规格型号
+  unit: string;          // 单位
+  price: number;         // 单价
+  quantity: number;      // 数量（导入参考用）
+  supplier: string;      // 供应商
+  remark: string;        // 备注
+  purchaseLink: string;  // 采购链接
+  categoryId: string;    // 所属目录ID（空字符串表示未分类）
   createdAt: number;
   updatedAt: number;
 }
