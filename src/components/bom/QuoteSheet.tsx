@@ -1,478 +1,491 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useAppState } from '@/lib/store';
-import { generateId, flattenBomForQuote, calculateProductCost, getProductCoefficients, calculateCostBreakdown } from '@/lib/bom-utils';
-import type { Quote, QuoteItem, CostBreakdown } from '@/lib/types';
+import { generateId, calculateProductCost, calculateCostBreakdown, getProductCoefficients } from '@/lib/bom-utils';
+import { numberToChinese, formatMoney, formatDate } from '@/lib/utils';
+import type { Quote, QuoteProduct, CostBreakdown } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 
 export function QuoteSheet() {
   const { state, dispatch } = useAppState();
-  const [selectedProductId, setSelectedProductId] = useState<string>('');
-  const [profitMargin, setProfitMargin] = useState<number>(15);
-  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
-  const [viewingQuote, setViewingQuote] = useState<Quote | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
+  const [showGenerator, setShowGenerator] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
 
-  const selectedProduct = useMemo(
-    () => state.products.find(p => p.id === selectedProductId),
-    [state.products, selectedProductId]
-  );
+  // 报价生成表单
+  const [quoteForm, setQuoteForm] = useState({
+    title: '',
+    projectName: '',
+    companyName: '',
+    contactPerson: '',
+    contactPhone: '',
+    profitMargin: 15,
+    selectedProducts: [] as string[], // product IDs
+    quantities: {} as Record<string, number>,
+  });
 
-  const previewCost = useMemo(() => {
-    if (!selectedProduct) return 0;
-    return calculateProductCost(selectedProduct.topAssemblyId, state);
-  }, [selectedProduct, state]);
+  const openGenerator = () => {
+    setQuoteForm({
+      title: '',
+      projectName: '',
+      companyName: '',
+      contactPerson: '',
+      contactPhone: '',
+      profitMargin: 15,
+      selectedProducts: [],
+      quantities: {},
+    });
+    setShowGenerator(true);
+  };
 
-  const handleGenerate = () => {
-    if (!selectedProduct) return;
-    const totalCost = calculateProductCost(selectedProduct.topAssemblyId, state);
-    const items = flattenBomForQuote(
-      selectedProduct.topAssemblyId,
-      state.parts,
-      state.assemblies,
-      state.bomEntries
-    );
-    const margin = profitMargin / 100;
+  const toggleProduct = (productId: string) => {
+    setQuoteForm(f => {
+      const selected = f.selectedProducts.includes(productId)
+        ? f.selectedProducts.filter(id => id !== productId)
+        : [...f.selectedProducts, productId];
+      return { ...f, selectedProducts: selected };
+    });
+  };
 
-    // 计算综合成本系数明细
-    const coefficients = getProductCoefficients(selectedProduct, state.defaultCoefficients);
-    const breakdown = calculateCostBreakdown(totalCost, coefficients);
+  const setQuantity = (productId: string, qty: number) => {
+    setQuoteForm(f => ({
+      ...f,
+      quantities: { ...f.quantities, [productId]: Math.max(1, qty) },
+    }));
+  };
 
-    const suggestedPrice = breakdown.totalCost * (1 + margin);
+  const handleGenerateQuote = () => {
+    if (quoteForm.selectedProducts.length === 0) return;
 
-    const quote: Quote = {
+    const now = Date.now();
+    const products: QuoteProduct[] = [];
+
+    for (const pid of quoteForm.selectedProducts) {
+      const product = state.products.find(p => p.id === pid);
+      if (!product) continue;
+
+      const qty = quoteForm.quantities[pid] || 1;
+      const materialCost = calculateProductCost(product.topAssemblyId, state);
+      const coefficients = getProductCoefficients(product, state.defaultCoefficients);
+      const breakdown = calculateCostBreakdown(materialCost, coefficients);
+
+      products.push({
+        productId: product.id,
+        productName: product.name,
+        brand: product.brand || '-',
+        model: product.model || '-',
+        parameters: product.parameters || '-',
+        quantity: qty,
+        unit: '套',
+        unitPrice: breakdown.totalCost,
+        amount: breakdown.totalCost * qty,
+        remark: '',
+        images: product.images || [],
+        costBreakdown: breakdown,
+      });
+    }
+
+    const totalMaterialCost = products.reduce((s, p) => s + p.costBreakdown!.materialCost * p.quantity, 0);
+    const totalCost = products.reduce((s, p) => s + p.amount, 0);
+    const totalAmount = totalCost * (1 + quoteForm.profitMargin / 100);
+    const profitMarginVal = quoteForm.profitMargin / 100;
+
+    const newQuote: Quote = {
       id: generateId(),
-      productId: selectedProduct.id,
-      productName: selectedProduct.name,
-      profitMargin: margin,
-      materialCost: totalCost,
-      totalCost: breakdown.totalCost,
-      suggestedPrice,
-      items,
-      costBreakdown: breakdown,
-      createdAt: Date.now(),
+      title: quoteForm.title || '报价方案',
+      projectName: quoteForm.projectName,
+      companyName: quoteForm.companyName,
+      contactPerson: quoteForm.contactPerson,
+      contactPhone: quoteForm.contactPhone,
+      profitMargin: profitMarginVal,
+      products,
+      totalMaterialCost,
+      totalCost,
+      totalAmount,
+      totalAmountCN: numberToChinese(totalAmount),
+      suggestedPrice: totalAmount,
+      createdAt: now,
     };
 
-    dispatch({ type: 'ADD_QUOTE', payload: quote });
-    setGenerateDialogOpen(false);
-    setViewingQuote(quote);
+    dispatch({ type: 'ADD_QUOTE', payload: newQuote });
+    setSelectedQuote(newQuote);
+    setShowGenerator(false);
   };
 
-  const handleDelete = (id: string) => {
-    // 手动重建quotes数组
-    const updatedQuotes = state.quotes.filter(q => q.id !== id);
-    // 由于没有DELETE_QUOTE action，我们使用LOAD_STATE
-    dispatch({
-      type: 'LOAD_STATE',
-      payload: { ...state, quotes: updatedQuotes },
-    });
-    setDeleteConfirm(null);
-    if (viewingQuote?.id === id) setViewingQuote(null);
-  };
+  const sortedQuotes = useMemo(() =>
+    [...state.quotes].sort((a, b) => b.createdAt - a.createdAt),
+    [state.quotes]
+  );
 
-  const handlePrint = useCallback(() => {
-    if (!printRef.current) return;
-    const printContent = printRef.current.innerHTML;
-    const win = window.open('', '_blank');
-    if (!win) return;
-    win.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>报价清单</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; color: #1e293b; }
-          table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
-          th { background: #f1f5f9; padding: 8px 12px; text-align: left; border: 1px solid #e2e8f0; font-weight: 600; color: #475569; }
-          td { padding: 8px 12px; border: 1px solid #e2e8f0; }
-          .text-right { text-align: right; }
-          .text-center { text-align: center; }
-          .font-mono { font-family: "SF Mono", "Cascadia Mono", monospace; }
-          .font-bold { font-weight: 700; }
-          .text-lg { font-size: 18px; }
-          .text-xl { font-size: 22px; }
-          .mb-2 { margin-bottom: 8px; }
-          .mb-4 { margin-bottom: 16px; }
-          .mb-6 { margin-bottom: 24px; }
-          .mt-4 { margin-top: 16px; }
-          .p-4 { padding: 16px; }
-          .border { border: 1px solid #e2e8f0; }
-          .rounded { border-radius: 6px; }
-          .bg-slate-50 { background: #f8fafc; }
-          .grid { display: grid; }
-          .grid-cols-2 { grid-template-columns: 1fr 1fr; }
-          .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
-          .gap-4 { gap: 16px; }
-          .text-sm { font-size: 14px; }
-          .text-xs { font-size: 12px; }
-          .text-slate-500 { color: #64748b; }
-          .text-slate-600 { color: #475569; }
-          .text-blue-600 { color: #2563eb; }
-          .text-amber-600 { color: #d97706; }
-          .text-emerald-600 { color: #059669; }
-          .indent-1 { padding-left: 24px; }
-          .indent-2 { padding-left: 48px; }
-          .indent-3 { padding-left: 72px; }
-          @media print { body { padding: 20px; } }
-        </style>
-      </head>
-      <body>${printContent}</body>
-      </html>
-    `);
-    win.document.close();
-    win.print();
-  }, []);
+  const handlePrint = () => {
+    window.print();
+  };
 
   return (
     <div className="space-y-4">
-      {/* 生成报价 */}
-      <div className="bg-white rounded-lg border border-slate-200 p-5">
-        <h3 className="text-sm font-semibold text-slate-700 mb-4">生成报价清单</h3>
-        <div className="flex items-end gap-4 flex-wrap">
-          <div className="space-y-1.5 min-w-[200px]">
-            <Label className="text-xs">选择产品</Label>
-            <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="选择产品..." />
-              </SelectTrigger>
-              <SelectContent>
-                {state.products.map(p => (
-                  <SelectItem key={p.id} value={p.id}>
-                    [{p.code}] {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5 w-36">
-            <Label className="text-xs">利润率(%)</Label>
-            <Input
-              type="number"
-              min={0}
-              max={999}
-              step={1}
-              value={profitMargin}
-              onChange={e => setProfitMargin(parseFloat(e.target.value) || 0)}
-              className="h-9"
-            />
-          </div>
-          {selectedProduct && (
-            <div className="text-sm">
-              <span className="text-slate-500">物料成本: </span>
-              <span className="font-mono font-bold text-amber-600">¥{previewCost.toFixed(2)}</span>
-              <span className="text-slate-400 mx-2">|</span>
-              <span className="text-slate-500">综合费用: </span>
-              <span className="font-mono font-bold text-blue-600">¥{(selectedProduct ? (() => {
-                const coeff = getProductCoefficients(selectedProduct, state.defaultCoefficients);
-                const breakdown = calculateCostBreakdown(previewCost, coeff);
-                return breakdown.totalCost - previewCost;
-              })() : 0).toFixed(2)}</span>
-              <span className="text-slate-400 mx-2">|</span>
-              <span className="text-slate-500">建议售价: </span>
-              <span className="font-mono font-bold text-emerald-600">
-                ¥{(selectedProduct ? (() => {
-                  const coeff = getProductCoefficients(selectedProduct, state.defaultCoefficients);
-                  const breakdown = calculateCostBreakdown(previewCost, coeff);
-                  return breakdown.totalCost * (1 + profitMargin / 100);
-                })() : 0).toFixed(2)}
-              </span>
-            </div>
-          )}
-          <div className="flex-1" />
-          <Button
-            onClick={() => setGenerateDialogOpen(true)}
-            disabled={!selectedProduct}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            生成报价
-          </Button>
-        </div>
+      {/* 工具栏 */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-slate-500">共 {sortedQuotes.length} 份报价单</div>
+        <Button
+          onClick={openGenerator}
+          size="sm"
+          className="bg-blue-600 hover:bg-blue-700"
+          disabled={state.products.length === 0}
+        >
+          <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          生成报价单
+        </Button>
       </div>
 
-      {/* 历史报价列表 */}
-      {state.quotes.length > 0 && (
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-200">
-            <h4 className="text-xs font-semibold text-slate-600">历史报价 ({state.quotes.length})</h4>
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="text-xs">产品名称</TableHead>
-                <TableHead className="text-xs text-right">物料成本</TableHead>
-                <TableHead className="text-xs text-right">总成本</TableHead>
-                <TableHead className="text-xs text-right">利润率</TableHead>
-                <TableHead className="text-xs text-right">建议售价</TableHead>
-                <TableHead className="text-xs text-right">生成时间</TableHead>
-                <TableHead className="w-24 text-right"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {state.quotes.map(quote => (
-                <TableRow key={quote.id} className="group">
-                  <TableCell className="font-medium">{quote.productName}</TableCell>
-                  <TableCell className="text-right font-mono text-slate-500">¥{quote.materialCost?.toFixed(2) ?? '-'}</TableCell>
-                  <TableCell className="text-right font-mono text-amber-600">¥{quote.totalCost.toFixed(2)}</TableCell>
-                  <TableCell className="text-right font-mono">{(quote.profitMargin * 100).toFixed(1)}%</TableCell>
-                  <TableCell className="text-right font-mono text-emerald-600 font-medium">¥{quote.suggestedPrice.toFixed(2)}</TableCell>
-                  <TableCell className="text-right text-xs text-slate-500">
-                    {new Date(quote.createdAt).toLocaleString('zh-CN')}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => setViewingQuote(quote)}
-                        className="p-1.5 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-600"
-                        title="查看"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm(quote.id)}
-                        className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500"
-                        title="删除"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      {state.products.length === 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-700">
+          请先在"产品管理"中创建产品，然后才能生成报价单。
         </div>
       )}
 
-      {/* 查看报价详情 */}
-      <Dialog open={!!viewingQuote} onOpenChange={() => setViewingQuote(null)}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+      {/* 报价列表 */}
+      <div className="space-y-3">
+        {sortedQuotes.map(quote => (
+          <div
+            key={quote.id}
+            className="bg-white rounded-lg border border-slate-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => setSelectedQuote(quote)}
+          >
             <div className="flex items-center justify-between">
-              <DialogTitle>报价清单详情</DialogTitle>
-              <Button size="sm" variant="outline" onClick={handlePrint} className="mr-8">
+              <div>
+                <p className="text-sm font-semibold text-slate-800">{quote.title}</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {quote.products.length} 个产品 | 总金额: <span className="font-mono text-amber-600 font-medium">¥{formatMoney(quote.totalAmount)}</span>
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">{formatDate(quote.createdAt)}</p>
+              </div>
+              <div className="text-xs text-slate-400">
+                {quote.companyName || '未填写单位'}
+              </div>
+            </div>
+          </div>
+        ))}
+        {sortedQuotes.length === 0 && state.products.length > 0 && (
+          <div className="text-center py-12">
+            <p className="text-sm text-slate-400">暂无报价单，点击"生成报价单"创建</p>
+          </div>
+        )}
+      </div>
+
+      {/* 生成报价对话框 */}
+      <Dialog open={showGenerator} onOpenChange={setShowGenerator}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>生成报价单</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {/* 头部信息 */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">报价方案标题</Label>
+                <Input
+                  value={quoteForm.title}
+                  onChange={e => setQuoteForm(f => ({ ...f, title: e.target.value }))}
+                  placeholder="如: LED显示屏报价方案"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">项目名称</Label>
+                <Input
+                  value={quoteForm.projectName}
+                  onChange={e => setQuoteForm(f => ({ ...f, projectName: e.target.value }))}
+                  placeholder="项目名称"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">单位名称</Label>
+                <Input
+                  value={quoteForm.companyName}
+                  onChange={e => setQuoteForm(f => ({ ...f, companyName: e.target.value }))}
+                  placeholder="单位名称"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">联系人</Label>
+                <Input
+                  value={quoteForm.contactPerson}
+                  onChange={e => setQuoteForm(f => ({ ...f, contactPerson: e.target.value }))}
+                  placeholder="联系人"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">电话</Label>
+                <Input
+                  value={quoteForm.contactPhone}
+                  onChange={e => setQuoteForm(f => ({ ...f, contactPhone: e.target.value }))}
+                  placeholder="电话"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">利润率 (%)</Label>
+                <Input
+                  type="number"
+                  value={quoteForm.profitMargin}
+                  onChange={e => setQuoteForm(f => ({ ...f, profitMargin: parseFloat(e.target.value) || 0 }))}
+                  className="h-9"
+                  min={0}
+                  max={100}
+                />
+              </div>
+            </div>
+
+            {/* 产品选择 */}
+            <div className="border-t border-slate-200 pt-3">
+              <Label className="text-xs font-medium mb-2 block">选择产品（可多选）</Label>
+              <div className="space-y-1 max-h-[240px] overflow-y-auto border border-slate-200 rounded-md p-2">
+                {state.products.map(product => {
+                  const cost = calculateProductCost(product.topAssemblyId, state);
+                  const isSelected = quoteForm.selectedProducts.includes(product.id);
+                  return (
+                    <div
+                      key={product.id}
+                      className={`flex items-center gap-3 p-2 rounded-md transition-colors ${isSelected ? 'bg-blue-50 border border-blue-200' : 'hover:bg-slate-50 border border-transparent'}`}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleProduct(product.id)}
+                        id={`prod-${product.id}`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <label htmlFor={`prod-${product.id}`} className="cursor-pointer flex items-center gap-2">
+                          {product.images && product.images[0] && (
+                            <img src={product.images[0]} alt="" className="w-8 h-8 object-cover rounded border border-slate-200 flex-shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-700 truncate">{product.name}</p>
+                            <p className="text-xs text-slate-400">
+                              {product.brand && `${product.brand} `}
+                              {product.model && `${product.model} `}
+                              | 物料成本: ¥{cost.toFixed(2)}
+                            </p>
+                          </div>
+                        </label>
+                      </div>
+                      {isSelected && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="text-xs text-slate-400">数量:</span>
+                          <Input
+                            type="number"
+                            value={quoteForm.quantities[product.id] || 1}
+                            onChange={e => setQuantity(product.id, parseInt(e.target.value) || 1)}
+                            className="w-16 h-7 text-xs text-center"
+                            min={1}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+            <Button variant="outline" size="sm" onClick={() => setShowGenerator(false)}>取消</Button>
+            <Button
+              size="sm"
+              onClick={handleGenerateQuote}
+              disabled={quoteForm.selectedProducts.length === 0}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              生成报价单 ({quoteForm.selectedProducts.length})
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 报价单详情（预览/打印） */}
+      <Dialog open={!!selectedQuote} onOpenChange={(open) => { if (!open) setSelectedQuote(null); }}>
+        <DialogContent className="sm:max-w-[1100px] max-h-[95vh] overflow-y-auto print:max-w-none print:max-h-none print:shadow-none print:border-none">
+          <div className="print:hidden flex justify-between items-center mb-4">
+            <DialogTitle>报价单预览</DialogTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setSelectedQuote(null)}>关闭</Button>
+              <Button size="sm" onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700">
                 <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                 </svg>
-                打印 / 导出PDF
+                打印/导出PDF
               </Button>
             </div>
-          </DialogHeader>
+          </div>
 
-          {viewingQuote && (
-            <div ref={printRef} className="mt-2">
-              {/* 报价头 */}
-              <div className="text-center mb-6">
-                <h2 className="text-xl font-bold text-slate-800">报价清单</h2>
-                <p className="text-sm text-slate-500 mt-1">
-                  {new Date(viewingQuote.createdAt).toLocaleString('zh-CN')}
-                </p>
-              </div>
-
-              {/* 产品信息 */}
-              <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                <div>
-                  <span className="text-xs text-slate-500">产品名称</span>
-                  <p className="text-sm font-semibold">{viewingQuote.productName}</p>
-                </div>
-                <div>
-                  <span className="text-xs text-slate-500">利润率</span>
-                  <p className="text-sm font-semibold">{(viewingQuote.profitMargin * 100).toFixed(1)}%</p>
-                </div>
-              </div>
-
-              {/* 成本汇总 */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                  <span className="text-xs text-amber-600">物料成本</span>
-                  <p className="text-xl font-mono font-bold text-amber-700">¥{viewingQuote.materialCost.toFixed(2)}</p>
-                </div>
-                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                  <span className="text-xs text-emerald-600">建议售价</span>
-                  <p className="text-xl font-mono font-bold text-emerald-700">¥{viewingQuote.suggestedPrice.toFixed(2)}</p>
-                </div>
-              </div>
-
-              {/* 费用明细 */}
-              {viewingQuote.costBreakdown && (
-                <div className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                  <h4 className="text-xs font-semibold text-slate-600 mb-2">费用明细</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {[
-                      { label: '物料成本', value: viewingQuote.costBreakdown.materialCost, rate: null, cls: 'text-slate-900' },
-                      { label: `人工费用`, value: viewingQuote.costBreakdown.laborCost, rate: viewingQuote.costBreakdown.laborRate, cls: 'text-blue-600' },
-                      { label: `损耗费用`, value: viewingQuote.costBreakdown.wasteCost, rate: viewingQuote.costBreakdown.wasteRate, cls: 'text-amber-600' },
-                      { label: `运费`, value: viewingQuote.costBreakdown.freightCost, rate: viewingQuote.costBreakdown.freightRate, cls: 'text-emerald-600' },
-                      { label: `税费`, value: viewingQuote.costBreakdown.taxCost, rate: viewingQuote.costBreakdown.taxRate, cls: 'text-purple-600' },
-                      { label: `房租分摊`, value: viewingQuote.costBreakdown.rentCost, rate: viewingQuote.costBreakdown.rentRate, cls: 'text-orange-600' },
-                      { label: `水电分摊`, value: viewingQuote.costBreakdown.utilitiesCost, rate: viewingQuote.costBreakdown.utilitiesRate, cls: 'text-cyan-600' },
-                    ].map(item => (
-                      <div key={item.label} className="bg-white rounded border border-slate-100 p-2">
-                        <div className="text-[10px] text-slate-400">
-                          {item.label}
-                          {item.rate !== null && ` (${item.rate}%)`}
-                        </div>
-                        <div className={`text-sm font-mono font-medium ${item.cls}`}>¥{item.value.toFixed(2)}</div>
-                      </div>
-                    ))}
-                    <div className="bg-blue-50 rounded border border-blue-100 p-2 col-span-2 sm:col-span-3">
-                      <div className="text-[10px] text-blue-500 font-medium">总成本（含各项费用）</div>
-                      <div className="text-lg font-mono font-bold text-blue-700">¥{viewingQuote.totalCost.toFixed(2)}</div>
-                    </div>
+          {selectedQuote && (
+            <div ref={printRef} className="bg-white p-6 print:p-4" style={{ fontFamily: "'Inter', 'Noto Sans SC', system-ui, sans-serif" }}>
+              {/* 头部信息 */}
+              <div className="flex justify-between items-start mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-red-600 rounded flex items-center justify-center text-white font-bold text-xs leading-tight text-center">
+                    CCTS<br /><span className="text-[8px] font-normal">中控交安</span>
                   </div>
-                  <div className="mt-2 pt-2 border-t border-slate-200 flex items-center gap-4 text-sm">
-                    <span className="text-slate-500">利润率: <strong>{(viewingQuote.profitMargin * 100).toFixed(1)}%</strong></span>
-                    <span className="text-slate-500">利润: <strong className="text-emerald-600 font-mono">¥{(viewingQuote.suggestedPrice - viewingQuote.totalCost).toFixed(2)}</strong></span>
-                    <span className="text-slate-500 font-semibold">建议售价: <strong className="text-emerald-600 font-mono text-lg">¥{viewingQuote.suggestedPrice.toFixed(2)}</strong></span>
+                  <div className="text-[9px] text-slate-400 leading-tight">
+                    CHINA CONTROL<br />TRAFFIC SECURE
                   </div>
                 </div>
-              )}
+                <div className="text-right text-xs space-y-0.5">
+                  <p><span className="text-slate-500">项目名称:</span> {selectedQuote.projectName || '________'}</p>
+                  <p><span className="text-slate-500">姓名:</span> {selectedQuote.contactPerson || '________'}</p>
+                  <p><span className="text-slate-500">单位名称:</span> {selectedQuote.companyName || '________'}</p>
+                  <p><span className="text-slate-500">电话:</span> {selectedQuote.contactPhone || '________'}</p>
+                </div>
+              </div>
 
-              {/* 明细表 */}
-              <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
+              {/* 标题 */}
+              <h1 className="text-center text-xl font-bold text-red-600 mb-6">{selectedQuote.title}</h1>
+
+              {/* 表格主体 */}
+              <table className="w-full border-collapse text-xs mb-4">
                 <thead>
-                  <tr className="bg-slate-100">
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-slate-600 border-b">层级</th>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-slate-600 border-b">编号</th>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-slate-600 border-b">名称</th>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-slate-600 border-b">规格</th>
-                    <th className="text-center px-3 py-2 text-xs font-semibold text-slate-600 border-b">单位</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-slate-600 border-b">数量</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-slate-600 border-b">单价</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-slate-600 border-b">损耗</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-slate-600 border-b">小计</th>
+                  <tr className="bg-red-600 text-white">
+                    <th className="border border-red-600 px-2 py-1.5 text-center w-8">序号</th>
+                    <th className="border border-red-600 px-2 py-1.5 text-left">产品名称</th>
+                    <th className="border border-red-600 px-2 py-1.5 text-left">品牌</th>
+                    <th className="border border-red-600 px-2 py-1.5 text-left">型号</th>
+                    <th className="border border-red-600 px-2 py-1.5 text-left">技术参数</th>
+                    <th className="border border-red-600 px-2 py-1.5 text-center w-12">数量</th>
+                    <th className="border border-red-600 px-2 py-1.5 text-center w-10">单位</th>
+                    <th className="border border-red-600 px-2 py-1.5 text-right w-20">单价</th>
+                    <th className="border border-red-600 px-2 py-1.5 text-right w-20">金额</th>
+                    <th className="border border-red-600 px-2 py-1.5 text-left">备注</th>
+                    <th className="border border-red-600 px-2 py-1.5 text-center w-16">图片</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {viewingQuote.items.map((item, idx) => (
-                    <QuoteItemRow key={idx} item={item} />
+                  {selectedQuote.products.map((p, idx) => (
+                    <tr key={p.productId} className="hover:bg-slate-50">
+                      <td className="border border-slate-300 px-2 py-1.5 text-center text-slate-500">{idx + 1}</td>
+                      <td className="border border-slate-300 px-2 py-1.5 font-medium text-slate-800">{p.productName}</td>
+                      <td className="border border-slate-300 px-2 py-1.5 text-slate-600">{p.brand}</td>
+                      <td className="border border-slate-300 px-2 py-1.5 text-slate-600">{p.model}</td>
+                      <td className="border border-slate-300 px-2 py-1.5 text-slate-600 max-w-[120px]">
+                        <div className="line-clamp-2 text-[10px]">{p.parameters}</div>
+                      </td>
+                      <td className="border border-slate-300 px-2 py-1.5 text-center font-mono">{p.quantity}</td>
+                      <td className="border border-slate-300 px-2 py-1.5 text-center text-slate-500">{p.unit}</td>
+                      <td className="border border-slate-300 px-2 py-1.5 text-right font-mono">¥{formatMoney(p.unitPrice)}</td>
+                      <td className="border border-slate-300 px-2 py-1.5 text-right font-mono font-medium">¥{formatMoney(p.amount)}</td>
+                      <td className="border border-slate-300 px-2 py-1.5 text-slate-400 text-[10px]">{p.remark}</td>
+                      <td className="border border-slate-300 px-2 py-1.5 text-center">
+                        {p.images && p.images[0] ? (
+                          <img src={p.images[0]} alt="" className="w-12 h-12 object-cover rounded mx-auto border border-slate-200" />
+                        ) : (
+                          <span className="text-slate-300">-</span>
+                        )}
+                      </td>
+                    </tr>
                   ))}
-                  <tr className="bg-slate-50 font-bold">
-                    <td colSpan={8} className="px-3 py-2.5 text-right text-sm border-t-2 border-slate-300">
-                      合计成本
-                    </td>
-                    <td className="px-3 py-2.5 text-right font-mono text-amber-600 border-t-2 border-slate-300">
-                      ¥{viewingQuote.totalCost.toFixed(2)}
-                    </td>
-                  </tr>
                 </tbody>
               </table>
+
+              {/* 合计区 */}
+              <div className="flex justify-end mb-4">
+                <table className="w-[300px] border-collapse text-xs">
+                  <tbody>
+                    <tr>
+                      <td className="border border-slate-300 px-3 py-2 font-bold text-right bg-slate-50 w-20">合计</td>
+                      <td className="border border-slate-300 px-3 py-2 text-right font-mono font-bold text-base text-amber-600">
+                        ¥{formatMoney(selectedQuote.totalAmount)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="border border-slate-300 px-3 py-2 font-bold text-right bg-slate-50">大写</td>
+                      <td className="border border-slate-300 px-3 py-2 font-mono text-sm text-slate-700">
+                        {selectedQuote.totalAmountCN}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 费用明细 */}
+              {selectedQuote.products[0]?.costBreakdown && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-2">费用明细</h3>
+                  <table className="w-full border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-100">
+                        <th className="border border-slate-300 px-2 py-1 text-left">费用项目</th>
+                        <th className="border border-slate-300 px-2 py-1 text-right">物料成本</th>
+                        <th className="border border-slate-300 px-2 py-1 text-right">人工</th>
+                        <th className="border border-slate-300 px-2 py-1 text-right">损耗</th>
+                        <th className="border border-slate-300 px-2 py-1 text-right">运费</th>
+                        <th className="border border-slate-300 px-2 py-1 text-right">税费</th>
+                        <th className="border border-slate-300 px-2 py-1 text-right">房租</th>
+                        <th className="border border-slate-300 px-2 py-1 text-right">水电</th>
+                        <th className="border border-slate-300 px-2 py-1 text-right">总成本</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedQuote.products.map((p, idx) => (
+                        <tr key={p.productId} className="hover:bg-slate-50">
+                          <td className="border border-slate-300 px-2 py-1 font-medium">{p.productName}</td>
+                          <td className="border border-slate-300 px-2 py-1 text-right font-mono">¥{formatMoney(p.costBreakdown!.materialCost * p.quantity)}</td>
+                          <td className="border border-slate-300 px-2 py-1 text-right font-mono">¥{formatMoney(p.costBreakdown!.laborCost * p.quantity)}</td>
+                          <td className="border border-slate-300 px-2 py-1 text-right font-mono">¥{formatMoney(p.costBreakdown!.wasteCost * p.quantity)}</td>
+                          <td className="border border-slate-300 px-2 py-1 text-right font-mono">¥{formatMoney(p.costBreakdown!.freightCost * p.quantity)}</td>
+                          <td className="border border-slate-300 px-2 py-1 text-right font-mono">¥{formatMoney(p.costBreakdown!.taxCost * p.quantity)}</td>
+                          <td className="border border-slate-300 px-2 py-1 text-right font-mono">¥{formatMoney(p.costBreakdown!.rentCost * p.quantity)}</td>
+                          <td className="border border-slate-300 px-2 py-1 text-right font-mono">¥{formatMoney(p.costBreakdown!.utilitiesCost * p.quantity)}</td>
+                          <td className="border border-slate-300 px-2 py-1 text-right font-mono font-bold">¥{formatMoney(p.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="bg-slate-50 font-bold">
+                        <td className="border border-slate-300 px-2 py-1">合计</td>
+                        <td className="border border-slate-300 px-2 py-1 text-right font-mono">¥{formatMoney(selectedQuote.totalMaterialCost)}</td>
+                        <td className="border border-slate-300 px-2 py-1 text-right font-mono" colSpan={7}>
+                          利润率: {(selectedQuote.profitMargin * 100).toFixed(0)}% | 
+                          总成本: ¥{formatMoney(selectedQuote.totalCost)} | 
+                          建议售价: <span className="text-amber-600">¥{formatMoney(selectedQuote.suggestedPrice)}</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* 尾部信息 */}
+              <div className="text-right text-xs text-slate-400 mt-4">
+                报价时间: {formatDate(selectedQuote.createdAt)}
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* 生成确认 */}
-      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>确认生成报价</DialogTitle>
-          </DialogHeader>
-          <div className="py-3 space-y-2 text-sm">
-            <p>产品: <span className="font-medium">{selectedProduct?.name}</span></p>
-            <p>利润率: <span className="font-medium">{profitMargin}%</span></p>
-            <p>物料成本: <span className="font-mono font-medium text-amber-600">¥{previewCost.toFixed(2)}</span></p>
-            {selectedProduct && (() => {
-              const coeff = getProductCoefficients(selectedProduct, state.defaultCoefficients);
-              const totalRate = Object.values(coeff).reduce((a, b) => a + b, 0);
-              return (
-                <p>综合费用率: <span className="font-medium">{totalRate.toFixed(1)}%</span></p>
-              );
-            })()}
-            {selectedProduct && (() => {
-              const coeff = getProductCoefficients(selectedProduct, state.defaultCoefficients);
-              const breakdown = calculateCostBreakdown(previewCost, coeff);
-              return (
-                <p>总成本: <span className="font-mono font-medium text-blue-600">¥{breakdown.totalCost.toFixed(2)}</span></p>
-              );
-            })()}
-            <p>建议售价: <span className="font-mono font-medium text-emerald-600">¥{(selectedProduct ? (() => {
-              const coeff = getProductCoefficients(selectedProduct, state.defaultCoefficients);
-              const breakdown = calculateCostBreakdown(previewCost, coeff);
-              return breakdown.totalCost * (1 + profitMargin / 100);
-            })() : 0).toFixed(2)}</span></p>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setGenerateDialogOpen(false)}>取消</Button>
-            <Button size="sm" onClick={handleGenerate} className="bg-blue-600 hover:bg-blue-700">确认生成</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 删除确认 */}
-      <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <DialogContent className="sm:max-w-[360px]">
-          <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-slate-600 py-2">确定要删除此报价记录吗？</p>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setDeleteConfirm(null)}>取消</Button>
-            <Button size="sm" variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)}>删除</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* 打印样式 */}
+      <style jsx global>{`
+        @media print {
+          body { margin: 0; padding: 0; }
+          .print\\:hidden { display: none !important; }
+          .print\\:p-4 { padding: 1rem !important; }
+          .print\\:max-w-none { max-width: none !important; }
+          .print\\:max-h-none { max-height: none !important; }
+          .print\\:shadow-none { box-shadow: none !important; }
+          .print\\:border-none { border: none !important; }
+          @page { margin: 0.5in; }
+        }
+      `}</style>
     </div>
-  );
-}
-
-function QuoteItemRow({ item }: { item: QuoteItem }) {
-  const indentClass = item.level === 0 ? '' : item.level === 1 ? 'indent-1' : item.level === 2 ? 'indent-2' : 'indent-3';
-
-  return (
-    <tr className={`border-b border-slate-100 ${!item.isPart ? 'bg-blue-50/30' : ''}`}>
-      <td className={`px-3 py-1.5 text-xs text-slate-500 ${indentClass}`}>
-        L{item.level + 1}
-      </td>
-      <td className={`px-3 py-1.5 font-mono text-xs ${indentClass} ${!item.isPart ? 'text-blue-600 font-medium' : 'text-slate-500'}`}>
-        {item.code}
-      </td>
-      <td className={`px-3 py-1.5 ${indentClass} ${!item.isPart ? 'font-medium text-blue-700' : ''}`}>
-        {item.name}
-      </td>
-      <td className={`px-3 py-1.5 text-slate-500 text-xs ${indentClass}`}>{item.spec}</td>
-      <td className="px-3 py-1.5 text-center text-xs">{item.unit}</td>
-      <td className="px-3 py-1.5 text-right font-mono text-xs">{item.quantity}</td>
-      <td className="px-3 py-1.5 text-right font-mono text-xs">¥{item.unitPrice.toFixed(2)}</td>
-      <td className="px-3 py-1.5 text-right font-mono text-xs text-orange-500">
-        {item.wasteRate > 0 ? `${(item.wasteRate * 100).toFixed(1)}%` : '-'}
-      </td>
-      <td className="px-3 py-1.5 text-right font-mono text-xs font-medium text-amber-600">
-        ¥{item.subtotal.toFixed(2)}
-      </td>
-    </tr>
   );
 }

@@ -38,7 +38,10 @@ export function ProductManagement() {
     code: '',
     name: '',
     model: '',
+    brand: '',
     description: '',
+    parameters: '',
+    images: [] as string[],
     topAssemblyId: '',
   });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -62,7 +65,10 @@ export function ProductManagement() {
       code: generateProductCode(state.products),
       name: '',
       model: '',
+      brand: '',
       description: '',
+      parameters: '',
+      images: [],
       topAssemblyId: '',
     });
     setEditCoefficients(state.defaultCoefficients);
@@ -76,7 +82,10 @@ export function ProductManagement() {
       code: product.code,
       name: product.name,
       model: product.model,
+      brand: product.brand || '',
       description: product.description,
+      parameters: product.parameters || '',
+      images: product.images || [],
       topAssemblyId: product.topAssemblyId,
     });
     setEditCoefficients(product.coefficients || state.defaultCoefficients);
@@ -84,21 +93,60 @@ export function ProductManagement() {
     setDialogOpen(true);
   };
 
+  const handleImageGenerate = async () => {
+    if (!form.name.trim()) return;
+    try {
+      const res = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productName: form.name, prompt: `Professional product photo of "${form.name}", studio lighting, white background, 8K product photography` }),
+      });
+      const data = await res.json();
+      if (data.imageUrls) {
+        setForm(f => ({ ...f, images: [...f.images, ...data.imageUrls] }));
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleImageUrlAdd = () => {
+    const url = prompt('请输入图片URL:');
+    if (url && url.trim()) {
+      setForm(f => ({ ...f, images: [...f.images, url.trim()] }));
+    }
+  };
+
+  const handleImageRemove = (idx: number) => {
+    setForm(f => ({ ...f, images: f.images.filter((_, i) => i !== idx) }));
+  };
+
   const handleSave = () => {
     if (!form.code.trim() || !form.name.trim() || !form.topAssemblyId) return;
     const now = Date.now();
     const coefficients = showCoefficients && editCoefficients ? editCoefficients : undefined;
 
+    const productData = {
+      code: form.code.trim(),
+      name: form.name.trim(),
+      model: form.model.trim(),
+      brand: form.brand.trim(),
+      description: form.description.trim(),
+      parameters: form.parameters.trim(),
+      images: form.images,
+      topAssemblyId: form.topAssemblyId,
+      coefficients,
+    };
+
     if (editingProduct) {
       dispatch({
         type: 'UPDATE_PRODUCT',
-        payload: { ...editingProduct, ...form, coefficients, updatedAt: now },
+        payload: { ...editingProduct, ...productData, updatedAt: now },
       });
     } else {
       const newProduct: Product = {
         id: generateId(),
-        ...form,
-        coefficients,
+        ...productData,
         createdAt: now,
         updatedAt: now,
       };
@@ -130,7 +178,10 @@ export function ProductManagement() {
         code,
         name: row.data.name || '未命名',
         model: row.data.model || '',
+        brand: '',
         description: row.data.description || '',
+        parameters: '',
+        images: [],
         topAssemblyId: assembly?.id || '',
         createdAt: now,
         updatedAt: now,
@@ -191,14 +242,15 @@ export function ProductManagement() {
               className="bg-white rounded-lg border border-slate-200 p-5 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="font-mono text-xs text-blue-600 font-medium">{product.code}</p>
                   <h3 className="text-base font-semibold text-slate-800 mt-0.5 truncate">{product.name}</h3>
-                  {product.model && (
-                    <p className="text-xs text-slate-400 mt-0.5">型号: {product.model}</p>
-                  )}
+                  <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                    {product.brand && <span>品牌: {product.brand}</span>}
+                    {product.model && <span>型号: {product.model}</span>}
+                  </div>
                 </div>
-                <div className="flex gap-1 flex-shrink-0">
+                <div className="flex gap-1 flex-shrink-0 ml-2">
                   <button
                     onClick={() => openEdit(product)}
                     className="p-1.5 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-600"
@@ -220,6 +272,14 @@ export function ProductManagement() {
 
               {product.description && (
                 <p className="text-sm text-slate-500 mb-3 line-clamp-2">{product.description}</p>
+              )}
+
+              {product.images && product.images.length > 0 && (
+                <div className="flex gap-2 mb-3 overflow-x-auto">
+                  {product.images.slice(0, 3).map((img, idx) => (
+                    <img key={idx} src={img} alt="" className="w-14 h-14 object-cover rounded border border-slate-200 flex-shrink-0" />
+                  ))}
+                </div>
               )}
 
               <div className="pt-3 border-t border-slate-100 space-y-2">
@@ -274,14 +334,73 @@ export function ProductManagement() {
                 />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">品牌</Label>
+                <Input
+                  value={form.brand}
+                  onChange={e => setForm(f => ({ ...f, brand: e.target.value }))}
+                  placeholder="产品品牌"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">型号</Label>
+                <Input
+                  value={form.model}
+                  onChange={e => setForm(f => ({ ...f, model: e.target.value }))}
+                  placeholder="产品型号"
+                  className="h-9"
+                />
+              </div>
+            </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">型号</Label>
-              <Input
-                value={form.model}
-                onChange={e => setForm(f => ({ ...f, model: e.target.value }))}
-                placeholder="产品型号"
-                className="h-9"
+              <Label className="text-xs">技术参数</Label>
+              <textarea
+                value={form.parameters}
+                onChange={e => setForm(f => ({ ...f, parameters: e.target.value }))}
+                placeholder="详细技术参数，每行一项"
+                className="w-full h-20 px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">产品图片</Label>
+              <div className="flex flex-wrap gap-2">
+                {form.images.map((img, idx) => (
+                  <div key={idx} className="relative group">
+                    <img src={img} alt="" className="w-16 h-16 object-cover rounded border border-slate-200" />
+                    <button
+                      type="button"
+                      onClick={() => handleImageRemove(idx)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleImageUrlAdd}
+                  className="w-16 h-16 border-2 border-dashed border-slate-300 rounded-md flex items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
+                  title="添加图片URL"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleImageGenerate}
+                  disabled={!form.name.trim()}
+                  className="w-16 h-16 border-2 border-dashed border-slate-300 rounded-md flex items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="AI生成图片"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400">支持添加图片URL或AI生成产品图片</p>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">关联BOM组件 <span className="text-red-500">*</span></Label>

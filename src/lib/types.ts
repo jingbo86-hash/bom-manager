@@ -52,7 +52,10 @@ export interface Product {
   code: string;          // 产品编号
   name: string;          // 产品名称
   model: string;         // 型号
+  brand: string;         // 品牌
   description: string;   // 描述
+  parameters: string;    // 详细技术参数（多行文本）
+  images: string[];      // 产品图片URL列表
   topAssemblyId: string; // 关联的顶级组件ID
   coefficients?: CostCoefficients; // 自定义成本系数（可选，不设置则使用默认值）
   createdAt: number;
@@ -77,17 +80,37 @@ export interface CostBreakdown {
   totalCost: number;      // 总成本
 }
 
+/** 报价单中的产品项 */
+export interface QuoteProduct {
+  productId: string;
+  productName: string;
+  brand: string;
+  model: string;
+  parameters: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;       // 产品单价（来自BOM计算）
+  amount: number;          // 小计 = quantity × unitPrice
+  remark: string;
+  images: string[];
+  costBreakdown?: CostBreakdown;
+}
+
 /** 报价清单 */
 export interface Quote {
   id: string;
-  productId: string;
-  productName: string;
-  profitMargin: number;   // 利润率 (0~1)
-  materialCost: number;   // 物料成本
-  totalCost: number;      // 总成本（含各项费用）
-  suggestedPrice: number; // 建议售价
-  items: QuoteItem[];     // 展开的明细
-  costBreakdown?: CostBreakdown; // 费用明细
+  title: string;           // 报价方案标题，如"LED显示屏报价方案"
+  projectName: string;     // 项目名称
+  companyName: string;     // 单位名称
+  contactPerson: string;   // 联系人
+  contactPhone: string;    // 电话
+  profitMargin: number;    // 利润率 (0~1)
+  products: QuoteProduct[];
+  totalMaterialCost: number; // 物料总成本
+  totalCost: number;       // 总成本（含各项费用）
+  totalAmount: number;     // 总金额（含利润）
+  totalAmountCN: string;   // 中文大写金额
+  suggestedPrice: number;  // 建议售价
   createdAt: number;
 }
 
@@ -98,14 +121,16 @@ export interface QuoteItem {
   name: string;           // 名称
   spec: string;           // 规格
   unit: string;           // 单位
-  quantity: number;        // 用量
+  quantity: number;       // 用量
   unitPrice: number;      // 单价
-  wasteRate: number;      // 损耗率
-  subtotal: number;       // 小计
-  isPart: boolean;        // 是否为基础零件
+  totalPrice: number;     // 小计
+  wasteRate?: number;     // 损耗率
+  subtotal?: number;      // 小计（含损耗）
+  isPart?: boolean;       // 是否为零件
+  remark: string;         // 备注
 }
 
-/** BOM 树节点（用于可视化展示） */
+/** BOM 树节点 */
 export interface BomTreeNode {
   id: string;
   code: string;
@@ -113,13 +138,16 @@ export interface BomTreeNode {
   type: 'part' | 'assembly';
   quantity: number;
   wasteRate: number;
-  unitCost: number;       // 自身单价/成本
-  totalCost: number;      // 总成本 = unitCost * quantity * (1 + wasteRate)
+  unitCost: number;
+  totalCost: number;
   children: BomTreeNode[];
-  isHighlighted?: boolean; // 价格变动高亮
+  isHighlighted?: boolean;
 }
 
-/** 全局应用状态 */
+/** 页面切换 Key */
+export type PageKey = 'parts' | 'bom' | 'products' | 'quotes';
+
+/** 应用状态 */
 export interface AppState {
   parts: Part[];
   assemblies: Assembly[];
@@ -128,6 +156,3 @@ export interface AppState {
   quotes: Quote[];
   defaultCoefficients: CostCoefficients;
 }
-
-/** 导航页面 */
-export type PageKey = 'parts' | 'bom' | 'products' | 'quotes';

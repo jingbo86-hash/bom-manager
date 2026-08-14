@@ -275,9 +275,10 @@ export function flattenBomForQuote(
           unit: part.unit,
           quantity: effectiveQty,
           unitPrice: part.price,
+          totalPrice: subtotal,
           wasteRate: entry.wasteRate,
-          subtotal,
           isPart: true,
+          remark: '',
         });
       }
     } else {
@@ -292,9 +293,10 @@ export function flattenBomForQuote(
           unit: '套',
           quantity: effectiveQty,
           unitPrice: assemblyCost,
+          totalPrice: assemblyCost * effectiveQty * (1 + entry.wasteRate),
           wasteRate: entry.wasteRate,
-          subtotal: assemblyCost * effectiveQty * (1 + entry.wasteRate),
           isPart: false,
+          remark: '',
         });
         // 递归展开子组件
         const subItems = flattenBomForQuote(
@@ -322,29 +324,17 @@ export function calculateProductCost(
   );
 }
 
-/** 获取产品的综合成本系数 */
-export function getProductCoefficients(
-  product: Product | undefined,
-  defaultCoefficients: CostCoefficients
-): CostCoefficients {
-  if (product?.coefficients) {
-    return product.coefficients;
-  }
-  return defaultCoefficients;
-}
-
-/** 计算综合成本费用明细 */
+/** 计算产品费用明细 */
 export function calculateCostBreakdown(
   materialCost: number,
-  coefficients: CostCoefficients
+  coefficients: CostCoefficients,
 ): CostBreakdown {
-  const laborCost = materialCost * coefficients.labor / 100;
-  const wasteCost = materialCost * coefficients.waste / 100;
-  const freightCost = materialCost * coefficients.freight / 100;
-  const taxCost = materialCost * coefficients.tax / 100;
-  const rentCost = materialCost * coefficients.rent / 100;
-  const utilitiesCost = materialCost * coefficients.utilities / 100;
-
+  const laborCost = materialCost * (coefficients.labor / 100);
+  const wasteCost = materialCost * (coefficients.waste / 100);
+  const freightCost = materialCost * (coefficients.freight / 100);
+  const taxCost = materialCost * (coefficients.tax / 100);
+  const rentCost = materialCost * (coefficients.rent / 100);
+  const utilitiesCost = materialCost * (coefficients.utilities / 100);
   const totalCost = materialCost + laborCost + wasteCost + freightCost + taxCost + rentCost + utilitiesCost;
 
   return {
@@ -363,6 +353,14 @@ export function calculateCostBreakdown(
     utilitiesRate: coefficients.utilities,
     totalCost,
   };
+}
+
+/** 获取产品的成本系数（优先使用产品自定义系数，否则使用默认值） */
+export function getProductCoefficients(
+  product: Product,
+  defaultCoefficients: CostCoefficients
+): CostCoefficients {
+  return product.coefficients ?? defaultCoefficients;
 }
 
 /** 获取组件的层级深度 */
