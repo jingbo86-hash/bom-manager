@@ -275,7 +275,7 @@ export function MultiSelectEntryDialog({ open, onOpenChange, parentAssembly, onC
                       : (item as Assembly).code;
                     const spec = activeTab === 'part' ? (item as Part).spec : '';
                     const price = activeTab === 'part'
-                      ? `¥${(item as Part).price.toFixed(2)}`
+                      ? `¥${Number((item as Part).price).toFixed(2)}`
                       : `¥${calculateAssemblyCost((item as Assembly).id, state.parts, state.assemblies, state.bomEntries).toFixed(2)}`;
 
                     return (

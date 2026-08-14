@@ -17,6 +17,7 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
   parts: {
     supplier: 'supplier',
     categoryId: 'category_id',
+    purchaseLink: 'purchase_link',
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   },
@@ -63,11 +64,26 @@ function toCamelCase(str: string): string {
   return str.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
 
-function rowToCamel(row: any): any {
+// 数字字段列表（按表分组，MySQL DECIMAL 返回字符串需转数字）
+const NUMERIC_FIELDS: Record<string, string[]> = {
+  parts: ['price', 'quantity'],
+  bomEntries: ['quantity', 'wasteRate'],
+  products: ['totalMaterialCost', 'totalCost', 'totalAmount', 'suggestedPrice'],
+  quotes: ['totalMaterialCost', 'totalCost', 'totalAmount', 'suggestedPrice', 'profitMargin'],
+  coefficients: ['labor', 'waste', 'freight', 'tax', 'rent', 'utilities'],
+};
+
+function rowToCamel(row: any, type?: string): any {
   if (!row) return row;
   const result: any = {};
   for (const key of Object.keys(row)) {
-    result[toCamelCase(key)] = row[key];
+    const camelKey = toCamelCase(key);
+    // 数字字段转换
+    if (type && NUMERIC_FIELDS[type]?.includes(camelKey)) {
+      result[camelKey] = row[key] !== null ? Number(row[key]) : 0;
+    } else {
+      result[camelKey] = row[key];
+    }
   }
   // 处理 JSON 字段
   if (result.images && typeof result.images === 'string') {
@@ -99,12 +115,12 @@ export async function POST(request: NextRequest) {
         if (type === 'coefficients') {
           sql = 'SELECT * FROM default_coefficients WHERE id = 1';
           const row = await getOne(sql);
-          return NextResponse.json({ data: row ? rowToCamel(row) : null });
+          return NextResponse.json({ data: row ? rowToCamel(row, table) : null });
         }
         const orderCol = table === 'bom_entries' ? 'id' : 'created_at';
         sql = `SELECT * FROM \`${table}\` ORDER BY \`${orderCol}\` DESC`;
         const rows = await query(sql);
-        return NextResponse.json({ data: rows.map(rowToCamel) });
+        return NextResponse.json({ data: rows.map((r: Record<string, unknown>) => rowToCamel(r, table)) });
       }
 
       // ============ 查询单条 ============
@@ -112,7 +128,7 @@ export async function POST(request: NextRequest) {
         const sql = `SELECT * FROM \`${table}\` WHERE id = ?`;
         const row = await getOne(sql, [id]);
         if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-        return NextResponse.json({ data: rowToCamel(row) });
+        return NextResponse.json({ data: rowToCamel(row, table) });
       }
 
       // ============ 创建 ============

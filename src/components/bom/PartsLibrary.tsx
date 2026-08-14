@@ -255,6 +255,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
                 <TableHead className="font-semibold text-slate-600 text-right">单价(元)</TableHead>
                 <TableHead className="font-semibold text-slate-600">供应商</TableHead>
                 <TableHead className="font-semibold text-slate-600 text-right">数量</TableHead>
+                <TableHead className="font-semibold text-slate-600 text-right">小计(元)</TableHead>
                 <TableHead className="font-semibold text-slate-600">备注</TableHead>
                 <TableHead className="font-semibold text-slate-600">采购链接</TableHead>
                 <TableHead className="w-24 text-right">操作</TableHead>
@@ -275,10 +276,13 @@ export function PartsLibrary({ onPriceChange }: Props) {
                     <TableCell className="text-slate-500 text-sm">{part.spec}</TableCell>
                     <TableCell className="text-slate-500 text-sm">{part.unit}</TableCell>
                     <TableCell className="text-right font-mono text-sm font-medium text-amber-600">
-                      {part.price.toFixed(2)}
+                      {Number(part.price).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-slate-500 text-sm">{part.supplier || '-'}</TableCell>
                     <TableCell className="text-right font-mono text-sm text-slate-500">{part.quantity > 0 ? part.quantity : '-'}</TableCell>
+                    <TableCell className="text-right font-mono text-sm font-medium text-emerald-600">
+                      {(Number(part.price) * Number(part.quantity || 0)).toFixed(2)}
+                    </TableCell>
                     <TableCell className="text-slate-400 text-sm max-w-[150px] truncate">{part.remark || '-'}</TableCell>
                     <TableCell className="text-slate-400 text-sm max-w-[150px] truncate">
                       {part.purchaseLink ? (
