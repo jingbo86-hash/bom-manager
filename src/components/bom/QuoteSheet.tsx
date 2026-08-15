@@ -75,7 +75,7 @@ export function QuoteSheet() {
       if (!product) continue;
 
       const qty = quoteForm.quantities[pid] || 1;
-      const materialCost = calculateProductCost(product.topAssemblyId, state);
+      const materialCost = calculateProductCost(product.topAssemblyIds, state);
       const coefficients = getProductCoefficients(product, state.defaultCoefficients);
       const breakdown = calculateCostBreakdown(materialCost, coefficients);
 
@@ -256,7 +256,7 @@ export function QuoteSheet() {
               <Label className="text-xs font-medium mb-2 block">选择产品（可多选）</Label>
               <div className="space-y-1 max-h-[240px] overflow-y-auto border border-slate-200 rounded-md p-2">
                 {state.products.map(product => {
-                  const cost = calculateProductCost(product.topAssemblyId, state);
+                  const cost = calculateProductCost(product.topAssemblyIds, state);
                   const isSelected = quoteForm.selectedProducts.includes(product.id);
                   return (
                     <div

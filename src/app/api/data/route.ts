@@ -38,7 +38,7 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
     wasteRate: 'waste_rate',
   },
   products: {
-    topAssemblyId: 'top_assembly_id',
+    topAssemblyIds: 'top_assembly_id',
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   },
@@ -95,6 +95,9 @@ function rowToCamel(row: any, type?: string): any {
   }
   if (result.products && typeof result.products === 'string') {
     try { result.products = JSON.parse(result.products); } catch { result.products = []; }
+  }
+  if (result.topAssemblyIds && typeof result.topAssemblyIds === 'string') {
+    try { result.topAssemblyIds = JSON.parse(result.topAssemblyIds); } catch { result.topAssemblyIds = []; }
   }
   return result;
 }

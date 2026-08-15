@@ -42,19 +42,19 @@ export function ProductManagement() {
     description: '',
     parameters: '',
     images: [] as string[],
-    topAssemblyId: '',
+    topAssemblyIds: [] as string[],
   });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [showCoefficients, setShowCoefficients] = useState(false);
   const [editCoefficients, setEditCoefficients] = useState<CostCoefficients>(state.defaultCoefficients);
 
-  // 可关联的顶级组件（没有被其他产品引用的组件）
+  // 可关联的组件（没有被其他产品引用的组件）
   const availableAssemblies = useMemo(() => {
     const usedIds = new Set(
       state.products
         .filter(p => editingProduct ? p.id !== editingProduct.id : true)
-        .map(p => p.topAssemblyId)
+        .flatMap(p => p.topAssemblyIds || [])
     );
     return state.assemblies.filter(a => !usedIds.has(a.id));
   }, [state.assemblies, state.products, editingProduct]);
@@ -69,7 +69,7 @@ export function ProductManagement() {
       description: '',
       parameters: '',
       images: [],
-      topAssemblyId: '',
+      topAssemblyIds: [],
     });
     setEditCoefficients(state.defaultCoefficients);
     setShowCoefficients(false);
@@ -86,7 +86,7 @@ export function ProductManagement() {
       description: product.description,
       parameters: product.parameters || '',
       images: product.images || [],
-      topAssemblyId: product.topAssemblyId,
+      topAssemblyIds: product.topAssemblyIds || [],
     });
     setEditCoefficients(product.coefficients || state.defaultCoefficients);
     setShowCoefficients(true);
@@ -164,7 +164,7 @@ export function ProductManagement() {
   };
 
   const handleSave = () => {
-    if (!form.code.trim() || !form.name.trim() || !form.topAssemblyId) return;
+    if (!form.code.trim() || !form.name.trim() || form.topAssemblyIds.length === 0) return;
     const now = Date.now();
     const coefficients = showCoefficients && editCoefficients ? editCoefficients : undefined;
 
@@ -176,7 +176,7 @@ export function ProductManagement() {
       description: form.description.trim(),
       parameters: form.parameters.trim(),
       images: form.images,
-      topAssemblyId: form.topAssemblyId,
+      topAssemblyIds: form.topAssemblyIds,
       coefficients,
     };
 
@@ -224,7 +224,7 @@ export function ProductManagement() {
         description: row.data.description || '',
         parameters: '',
         images: [],
-        topAssemblyId: assembly?.id || '',
+        topAssemblyIds: assembly?.id ? [assembly.id] : [],
         createdAt: now,
         updatedAt: now,
       });
@@ -275,8 +275,8 @@ export function ProductManagement() {
       {/* 产品卡片 */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {state.products.map(product => {
-          const assembly = state.assemblies.find(a => a.id === product.topAssemblyId);
-          const cost = calculateProductCost(product.topAssemblyId, state);
+          const assemblies = (product.topAssemblyIds || []).map(id => state.assemblies.find(a => a.id === id)).filter(Boolean);
+          const cost = product.topAssemblyIds?.reduce((sum, id) => sum + calculateProductCost([id], state), 0) || 0;
 
           return (
             <div
@@ -327,7 +327,7 @@ export function ProductManagement() {
               <div className="pt-3 border-t border-slate-100 space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-500">关联组件</span>
-                  <span className="text-slate-700 font-medium">{assembly?.name ?? '未关联'}</span>
+                  <span className="text-slate-700 font-medium truncate max-w-[200px]">{assemblies.map(a => a?.name).filter(Boolean).join(', ') || '未关联'}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-500">产品成本</span>
@@ -471,18 +471,45 @@ export function ProductManagement() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">关联BOM组件 <span className="text-red-500">*</span></Label>
-              <Select value={form.topAssemblyId} onValueChange={v => setForm(f => ({ ...f, topAssemblyId: v }))}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="选择顶级组件..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableAssemblies.map(a => (
-                    <SelectItem key={a.id} value={a.id}>
-                      [{a.code}] {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap gap-2 min-h-[36px] p-2 border border-slate-200 rounded-md bg-white">
+                {form.topAssemblyIds.map(id => {
+                  const asm = state.assemblies.find(a => a.id === id);
+                  return (
+                    <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs">
+                      [{asm?.code}] {asm?.name}
+                      <button
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, topAssemblyIds: f.topAssemblyIds.filter(i => i !== id) }))}
+                        className="text-blue-400 hover:text-red-500 ml-0.5"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
+                {form.topAssemblyIds.length < 20 && (
+                  <Select
+                    value=""
+                    onValueChange={v => {
+                      if (v && !form.topAssemblyIds.includes(v) && form.topAssemblyIds.length < 20) {
+                        setForm(f => ({ ...f, topAssemblyIds: [...f.topAssemblyIds, v] }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-7 border-0 shadow-none text-xs text-slate-400 hover:text-slate-600 gap-1 w-auto min-w-[80px]">
+                      <SelectValue placeholder="+ 添加组件" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {state.assemblies.filter(a => !form.topAssemblyIds.includes(a.id)).map(a => (
+                        <SelectItem key={a.id} value={a.id}>
+                          [{a.code}] {a.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              {form.topAssemblyIds.length === 0 && <p className="text-xs text-red-400">请至少选择一个BOM组件</p>}
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">描述</Label>
@@ -516,14 +543,14 @@ export function ProductManagement() {
               </button>
               {showCoefficients && (
                 <div className="mt-3">
-                  {form.topAssemblyId && (
+                  {form.topAssemblyIds.length > 0 && (
                     <CostCoefficientEditor
                       coefficients={editCoefficients}
                       onChange={setEditCoefficients}
-                      materialCost={form.topAssemblyId ? calculateProductCost(form.topAssemblyId, state) : 0}
+                      materialCost={form.topAssemblyIds.length > 0 ? calculateProductCost(form.topAssemblyIds, state) : 0}
                     />
                   )}
-                  {!form.topAssemblyId && (
+                  {form.topAssemblyIds.length === 0 && (
                     <p className="text-xs text-slate-400 py-2">请先选择关联BOM组件</p>
                   )}
                 </div>
@@ -535,7 +562,7 @@ export function ProductManagement() {
             <Button
               size="sm"
               onClick={handleSave}
-              disabled={!form.code.trim() || !form.name.trim() || !form.topAssemblyId}
+              disabled={!form.code.trim() || !form.name.trim() || form.topAssemblyIds.length === 0}
               className="bg-blue-600 hover:bg-blue-700"
             >
               {editingProduct ? '保存' : '创建'}

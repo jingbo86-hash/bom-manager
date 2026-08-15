@@ -127,7 +127,7 @@ function appReducer(state: AppState, action: Action): AppState {
         ...state,
         assemblies: state.assemblies.filter(a => !idsToRemove.has(a.id)),
         bomEntries: state.bomEntries.filter(b => !idsToRemove.has(b.parentId) && !idsToRemove.has(b.childId)),
-        products: state.products.filter(p => !idsToRemove.has(p.topAssemblyId)),
+        products: state.products.filter(p => !p.topAssemblyIds.some(id => idsToRemove.has(id))),
       };
     }
 

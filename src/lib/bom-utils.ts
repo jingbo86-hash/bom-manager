@@ -313,15 +313,19 @@ export function flattenBomForQuote(
 
 /** 计算产品总成本 */
 export function calculateProductCost(
-  topAssemblyId: string,
+  topAssemblyIds: string[],
   state: AppState
 ): number {
-  return calculateAssemblyCost(
-    topAssemblyId,
-    state.parts,
-    state.assemblies,
-    state.bomEntries
-  );
+  let total = 0;
+  for (const id of topAssemblyIds) {
+    total += calculateAssemblyCost(
+      id,
+      state.parts,
+      state.assemblies,
+      state.bomEntries
+    );
+  }
+  return total;
 }
 
 /** 计算产品费用明细 */

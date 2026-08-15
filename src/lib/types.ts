@@ -69,7 +69,7 @@ export interface Product {
   description: string;   // 描述
   parameters: string;    // 详细技术参数（多行文本）
   images: string[];      // 产品图片URL列表
-  topAssemblyId: string; // 关联的顶级组件ID
+  topAssemblyIds: string[]; // 关联的顶级组件ID列表（最多20个）
   coefficients?: CostCoefficients; // 自定义成本系数（可选，不设置则使用默认值）
   createdAt: number;
   updatedAt: number;

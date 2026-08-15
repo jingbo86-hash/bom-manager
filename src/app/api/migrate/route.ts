@@ -64,7 +64,8 @@ export async function POST(request: NextRequest) {
            top_assembly_id=VALUES(top_assembly_id), coefficients=VALUES(coefficients), updated_at=VALUES(updated_at)`,
           [
             p.id, p.code, p.name, p.model || '', p.brand || '', p.description || '',
-            p.parameters || '', JSON.stringify(p.images || []), p.topAssemblyId || null,
+            p.parameters || '', JSON.stringify(p.images || []),
+            JSON.stringify(p.topAssemblyIds || (p.topAssemblyId ? [p.topAssemblyId] : [])),
             p.coefficients ? JSON.stringify(p.coefficients) : null, p.createdAt, p.updatedAt
           ]
         );
