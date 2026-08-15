@@ -458,6 +458,7 @@ export function BomManagement({ highlightedPartId }: Props) {
                       <th className="text-left px-4 py-2 text-xs font-medium text-slate-500">类型</th>
                       <th className="text-left px-4 py-2 text-xs font-medium text-slate-500">编号</th>
                       <th className="text-left px-4 py-2 text-xs font-medium text-slate-500">名称</th>
+                      <th className="text-left px-4 py-2 text-xs font-medium text-slate-500">规格型号</th>
                       <th className="text-right px-4 py-2 text-xs font-medium text-slate-500">用量</th>
                       <th className="text-right px-4 py-2 text-xs font-medium text-slate-500">损耗率</th>
                       <th className="text-right px-4 py-2 text-xs font-medium text-slate-500">小计</th>
@@ -487,6 +488,11 @@ export function BomManagement({ highlightedPartId }: Props) {
                           </td>
                           <td className="px-4 py-2 font-mono text-xs text-slate-500">{child?.code ?? '-'}</td>
                           <td className="px-4 py-2">{child?.name ?? '-'}</td>
+                          <td className="px-4 py-2 text-slate-500 text-sm">
+                            {entry.childType === 'part'
+                              ? (child as { spec?: string })?.spec || '-'
+                              : (child as { description?: string })?.description || '-'}
+                          </td>
                           <td className="px-4 py-2 text-right font-mono">
                             <input
                               type="number"
