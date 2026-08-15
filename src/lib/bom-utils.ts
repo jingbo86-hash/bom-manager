@@ -76,7 +76,7 @@ export function calculateAssemblyCost(
     } else {
       childCost = calculateAssemblyCost(entry.childId, parts, assemblies, bomEntries, visited);
     }
-    total += childCost * entry.quantity * (1 + entry.wasteRate);
+    total += childCost * (Number(entry.quantity) || 0) * (1 + (Number(entry.wasteRate) || 0));
   }
 
   return total;
@@ -175,21 +175,23 @@ export function buildBomTree(
   const childNodes: BomTreeNode[] = [];
 
   for (const entry of children) {
+    const qty = Number(entry.quantity) || 0;
+    const waste = Number(entry.wasteRate) || 0;
     let childNode: BomTreeNode | null = null;
 
     if (entry.childType === 'part') {
       const part = parts.find(p => p.id === entry.childId);
       if (part) {
-        const unitCost = part.price;
+        const unitCost = Number(part.price) || 0;
         childNode = {
           id: part.id,
           code: part.code,
           name: part.name,
           type: 'part',
-          quantity: entry.quantity,
-          wasteRate: entry.wasteRate,
+          quantity: qty,
+          wasteRate: waste,
           unitCost,
-          totalCost: unitCost * entry.quantity * (1 + entry.wasteRate),
+          totalCost: unitCost * qty * (1 + waste),
           children: [],
           isHighlighted: highlightedIds?.has(part.id),
         };
@@ -203,10 +205,10 @@ export function buildBomTree(
           code: childAssembly.code,
           name: childAssembly.name,
           type: 'assembly',
-          quantity: entry.quantity,
-          wasteRate: entry.wasteRate,
+          quantity: qty,
+          wasteRate: waste,
           unitCost,
-          totalCost: unitCost * entry.quantity * (1 + entry.wasteRate),
+          totalCost: unitCost * qty * (1 + waste),
           children: [],
           isHighlighted: highlightedIds?.has(childAssembly.id),
         };
@@ -261,12 +263,15 @@ export function flattenBomForQuote(
   const children = bomEntries.filter(b => b.parentId === assemblyId);
 
   for (const entry of children) {
-    const effectiveQty = entry.quantity * parentQuantity;
+    const qty = Number(entry.quantity) || 0;
+    const waste = Number(entry.wasteRate) || 0;
+    const effectiveQty = qty * parentQuantity;
 
     if (entry.childType === 'part') {
       const part = parts.find(p => p.id === entry.childId);
       if (part) {
-        const subtotal = part.price * effectiveQty * (1 + entry.wasteRate);
+        const price = Number(part.price) || 0;
+        const subtotal = price * effectiveQty * (1 + waste);
         items.push({
           level,
           code: part.code,
@@ -274,9 +279,9 @@ export function flattenBomForQuote(
           spec: part.spec,
           unit: part.unit,
           quantity: effectiveQty,
-          unitPrice: part.price,
+          unitPrice: price,
           totalPrice: subtotal,
-          wasteRate: entry.wasteRate,
+          wasteRate: waste,
           isPart: true,
           remark: '',
         });
@@ -293,8 +298,8 @@ export function flattenBomForQuote(
           unit: '套',
           quantity: effectiveQty,
           unitPrice: assemblyCost,
-          totalPrice: assemblyCost * effectiveQty * (1 + entry.wasteRate),
-          wasteRate: entry.wasteRate,
+          totalPrice: assemblyCost * effectiveQty * (1 + waste),
+          wasteRate: waste,
           isPart: false,
           remark: '',
         });
