@@ -43,6 +43,7 @@ export interface Assembly {
   id: string;
   code: string;          // 组件编号
   name: string;          // 组件名称
+  type: 'finished' | 'semi-finished';  // 成品/半成品
   description: string;   // 描述
   createdAt: number;
   updatedAt: number;

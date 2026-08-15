@@ -25,9 +25,11 @@ export function BomManagement({ highlightedPartId }: Props) {
   const [assemblyDialogOpen, setAssemblyDialogOpen] = useState(false);
   const [entryDialogOpen, setEntryDialogOpen] = useState(false);
   const [editingAssembly, setEditingAssembly] = useState<Assembly | null>(null);
-  const [assemblyForm, setAssemblyForm] = useState({ code: '', name: '', description: '' });
+  const [assemblyForm, setAssemblyForm] = useState<{ code: string; name: string; description: string; type: 'finished' | 'semi-finished' }>({ code: '', name: '', description: '', type: 'semi-finished' });
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'assembly' | 'entry'; id: string } | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [editingQuantity, setEditingQuantity] = useState<string | null>(null);
+  const [editQuantityValue, setEditQuantityValue] = useState<string>('');
 
   const selectedAssembly = useMemo(
     () => state.assemblies.find(a => a.id === selectedAssemblyId),
@@ -92,13 +94,13 @@ export function BomManagement({ highlightedPartId }: Props) {
   // 组件 CRUD
   const openAddAssembly = () => {
     setEditingAssembly(null);
-    setAssemblyForm({ code: generateAssemblyCode(state.assemblies), name: '', description: '' });
+    setAssemblyForm({ code: generateAssemblyCode(state.assemblies), name: '', description: '', type: 'semi-finished' });
     setAssemblyDialogOpen(true);
   };
 
   const openEditAssembly = (asm: Assembly) => {
     setEditingAssembly(asm);
-    setAssemblyForm({ code: asm.code, name: asm.name, description: asm.description });
+    setAssemblyForm({ code: asm.code, name: asm.name, description: asm.description, type: asm.type || 'semi-finished' });
     setAssemblyDialogOpen(true);
   };
 
@@ -141,6 +143,90 @@ export function BomManagement({ highlightedPartId }: Props) {
   const handleDeleteEntry = (id: string) => {
     dispatch({ type: 'DELETE_BOM_ENTRY', payload: id });
     setDeleteConfirm(null);
+  };
+
+  const [editingEntry, setEditingEntry] = useState<{ id: string; quantity: number; wasteRate: number } | null>(null);
+
+  const handleUpdateEntry = (id: string, quantity: number, wasteRate: number) => {
+    const entry = state.bomEntries.find(b => b.id === id);
+    if (entry) {
+      dispatch({ type: 'UPDATE_BOM_ENTRY', payload: { ...entry, quantity, wasteRate } });
+    }
+  };
+
+  // BOM导出
+  const handleExportBom = () => {
+    if (!selectedAssembly) return;
+    const rows: string[][] = [['层级', '类型', '编号', '名称', '规格', '用量', '单价', '小计']];
+    const flattenTree = (node: BomTreeNode, depth: number) => {
+      const type = node.type === 'assembly' ? '组件' : '零件';
+      const spec = node.type === 'part' ? (state.parts.find(p => p.id === node.id)?.spec || '') : '';
+      const price = node.type === 'part' ? (state.parts.find(p => p.id === node.id)?.price || 0) : 0;
+      rows.push([String(depth), type, node.code, node.name, spec, String(node.quantity), String(price), String(node.totalCost || 0)]);
+      node.children.forEach(child => flattenTree(child, depth + 1));
+    };
+    if (bomTree) flattenTree(bomTree, 0);
+    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedAssembly.name}_BOM.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // BOM导入
+  const handleImportBom = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv,.xlsx,.xls';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const XLSX = await import('xlsx');
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+      if (json.length < 2) return;
+      const headers = json[0].map(h => String(h).trim());
+      const nameIdx = headers.findIndex(h => h.includes('名称'));
+      const codeIdx = headers.findIndex(h => h.includes('编号'));
+      const quantityIdx = headers.findIndex(h => h.includes('用量'));
+      if (nameIdx === -1) return alert('未找到"名称"列');
+      for (let i = 1; i < json.length; i++) {
+        const row = json[i] as string[];
+        if (!row[nameIdx]?.trim()) continue;
+        const childName = String(row[nameIdx]).trim();
+        const childCode = codeIdx > -1 ? String(row[codeIdx] || '').trim() : '';
+        const quantity = quantityIdx > -1 ? parseFloat(String(row[quantityIdx] || '1')) || 1 : 1;
+        // 查找零件或组件
+        const part = state.parts.find(p => p.name === childName || p.code === childCode);
+        if (part) {
+          dispatch({
+            type: 'ADD_BOM_ENTRY',
+            payload: {
+              id: generateId(), parentId: selectedAssemblyId!, childId: part.id,
+              childType: 'part' as const, quantity, wasteRate: 0,
+            },
+          });
+        } else {
+          const asm = state.assemblies.find(a => a.name === childName);
+          if (asm) {
+            dispatch({
+              type: 'ADD_BOM_ENTRY',
+              payload: {
+                id: generateId(), parentId: selectedAssemblyId!, childId: asm.id,
+                childType: 'assembly' as const, quantity, wasteRate: 0,
+              },
+            });
+          }
+        }
+      }
+      alert('导入完成');
+    };
+    input.click();
   };
 
   // 渲染树节点
@@ -242,7 +328,14 @@ export function BomManagement({ highlightedPartId }: Props) {
                   <div className="flex items-start justify-between">
                     <div className="min-w-0">
                       <p className="font-mono text-xs text-blue-600 font-medium">{asm.code}</p>
-                      <p className="text-sm font-medium text-slate-800 truncate">{asm.name}</p>
+                      <p className="text-sm font-medium text-slate-800 truncate flex items-center gap-1.5">
+                        {asm.name}
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                          asm.type === 'finished' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {asm.type === 'finished' ? '成品' : '半成品'}
+                        </span>
+                      </p>
                     </div>
                     <div className="flex gap-0.5 ml-2 flex-shrink-0">
                       <button
@@ -285,6 +378,11 @@ export function BomManagement({ highlightedPartId }: Props) {
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm text-blue-600 font-medium">{selectedAssembly.code}</span>
                     <span className="text-base font-semibold">{selectedAssembly.name}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      selectedAssembly.type === 'finished' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {selectedAssembly.type === 'finished' ? '成品' : '半成品'}
+                    </span>
                   </div>
                   {selectedAssembly.description && (
                     <p className="text-sm text-slate-500 mt-1">{selectedAssembly.description}</p>
@@ -300,7 +398,7 @@ export function BomManagement({ highlightedPartId }: Props) {
             </div>
 
             {/* 操作栏 */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button size="sm" onClick={openAddEntry} className="bg-blue-600 hover:bg-blue-700 h-8">
                 <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -309,6 +407,19 @@ export function BomManagement({ highlightedPartId }: Props) {
               </Button>
               <Button size="sm" variant="outline" onClick={expandAll} className="h-8">全部展开</Button>
               <Button size="sm" variant="outline" onClick={collapseAll} className="h-8">全部折叠</Button>
+              <div className="flex-1" />
+              <Button size="sm" variant="outline" onClick={handleExportBom} className="h-8 text-blue-600 border-blue-200 hover:bg-blue-50">
+                <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                导出BOM
+              </Button>
+              <Button size="sm" variant="outline" onClick={handleImportBom} className="h-8 text-emerald-600 border-emerald-200 hover:bg-emerald-50">
+                <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                导入BOM
+              </Button>
             </div>
 
             {/* BOM 树 */}
@@ -376,7 +487,33 @@ export function BomManagement({ highlightedPartId }: Props) {
                           </td>
                           <td className="px-4 py-2 font-mono text-xs text-slate-500">{child?.code ?? '-'}</td>
                           <td className="px-4 py-2">{child?.name ?? '-'}</td>
-                          <td className="px-4 py-2 text-right font-mono">{entry.quantity}</td>
+                          <td className="px-4 py-2 text-right font-mono">
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={editingEntry?.id === entry.id ? editingEntry.quantity : entry.quantity}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setEditingEntry({ id: entry.id, quantity: val, wasteRate: entry.wasteRate });
+                              }}
+                              onBlur={() => {
+                                if (editingEntry?.id === entry.id) {
+                                  handleUpdateEntry(entry.id, editingEntry.quantity, entry.wasteRate);
+                                  setEditingEntry(null);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  (e.target as HTMLInputElement).blur();
+                                }
+                                if (e.key === 'Escape') {
+                                  setEditingEntry(null);
+                                }
+                              }}
+                              className="w-20 text-right font-mono px-2 py-1 border border-slate-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </td>
                           <td className="px-4 py-2 text-right font-mono text-orange-500">
                             {entry.wasteRate > 0 ? `${(entry.wasteRate * 100).toFixed(1)}%` : '-'}
                           </td>
@@ -442,6 +579,33 @@ export function BomManagement({ highlightedPartId }: Props) {
                 placeholder="组件名称"
                 className="h-9"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">类型</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAssemblyForm(f => ({ ...f, type: 'semi-finished' }))}
+                  className={`flex-1 h-9 text-sm rounded-md border transition-colors ${
+                    assemblyForm.type === 'semi-finished'
+                      ? 'border-amber-400 bg-amber-50 text-amber-700 font-medium'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  半成品
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAssemblyForm(f => ({ ...f, type: 'finished' }))}
+                  className={`flex-1 h-9 text-sm rounded-md border transition-colors ${
+                    assemblyForm.type === 'finished'
+                      ? 'border-emerald-400 bg-emerald-50 text-emerald-700 font-medium'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  成品
+                </button>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">描述</Label>

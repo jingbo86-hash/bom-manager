@@ -220,6 +220,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadAllFromDB()
       .then(data => {
+        // 检查 MySQL 是否为空，且 localStorage 有备份数据
+        const isEmpty = !data.parts.length && !data.assemblies.length && !data.products.length;
+        if (isEmpty) {
+          try {
+            const saved = localStorage.getItem('bom-management-system');
+            if (saved) {
+              const parsed = JSON.parse(saved) as AppState;
+              console.log('MySQL is empty, restoring from localStorage backup');
+              // 确保所有字段都有默认值，防止旧数据缺少字段导致报错
+              const merged: AppState = {
+                ...initialState,
+                ...parsed,
+                parts: parsed.parts || [],
+                assemblies: parsed.assemblies || [],
+                bomEntries: parsed.bomEntries || [],
+                products: parsed.products || [],
+                quotes: parsed.quotes || [],
+                categories: parsed.categories || [],
+                defaultCoefficients: parsed.defaultCoefficients || initialState.defaultCoefficients,
+              };
+              dispatch({ type: 'LOAD_STATE', payload: merged });
+              prevStateRef.current = merged;
+              return;
+            }
+          } catch { /* ignore */ }
+        }
         dispatch({ type: 'LOAD_STATE', payload: data });
         prevStateRef.current = data;
       })
@@ -230,8 +256,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const saved = localStorage.getItem('bom-management-system');
           if (saved) {
             const parsed = JSON.parse(saved) as AppState;
-            dispatch({ type: 'LOAD_STATE', payload: parsed });
-            prevStateRef.current = parsed;
+            const merged: AppState = {
+              ...initialState,
+              ...parsed,
+              parts: parsed.parts || [],
+              assemblies: parsed.assemblies || [],
+              bomEntries: parsed.bomEntries || [],
+              products: parsed.products || [],
+              quotes: parsed.quotes || [],
+              categories: parsed.categories || [],
+              defaultCoefficients: parsed.defaultCoefficients || initialState.defaultCoefficients,
+            };
+            dispatch({ type: 'LOAD_STATE', payload: merged });
+            prevStateRef.current = merged;
           }
         } catch { /* ignore */ }
       })

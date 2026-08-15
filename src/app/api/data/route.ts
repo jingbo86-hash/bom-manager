@@ -27,6 +27,7 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
     updatedAt: 'updated_at',
   },
   assemblies: {
+    type: 'type',
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   },
