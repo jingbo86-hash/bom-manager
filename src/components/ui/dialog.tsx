@@ -54,17 +54,67 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
+  const contentRef = React.useRef<HTMLDivElement>(null)
+  const [position, setPosition] = React.useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = React.useState(false)
+  const dragStart = React.useRef({ x: 0, y: 0, startX: 0, startY: 0 })
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Only start drag from header area
+    const target = e.target as HTMLElement
+    if (!target.closest('[data-dialog-drag-handle]')) return
+    if ((e.target as HTMLElement).closest('button, input, select, textarea, [role="button"]')) return
+    setIsDragging(true)
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      startX: position.x,
+      startY: position.y,
+    }
+  }
+
+  React.useEffect(() => {
+    if (!isDragging) return
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - dragStart.current.x
+      const dy = e.clientY - dragStart.current.y
+      setPosition({
+        x: dragStart.current.startX + dx,
+        y: dragStart.current.startY + dy,
+      })
+    }
+    const handleMouseUp = () => setIsDragging(false)
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging])
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
+        ref={contentRef}
         data-slot="dialog-content"
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 outline-none sm:max-w-lg",
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed z-50 grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-lg border p-6 shadow-lg duration-200 outline-none sm:max-w-lg",
+          isDragging ? "cursor-grabbing" : "",
           className
         )}
+        style={{
+          left: `calc(50% + ${position.x}px)`,
+          top: `calc(50% + ${position.y}px)`,
+          transform: 'translate(-50%, -50%)',
+        }}
         {...props}
       >
+        <div
+          className="absolute inset-x-0 top-0 h-10 cursor-grab rounded-t-lg"
+          data-dialog-drag-handle
+          onMouseDown={handleMouseDown}
+        />
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close
