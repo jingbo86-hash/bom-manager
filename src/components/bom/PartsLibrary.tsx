@@ -6,6 +6,7 @@ import { Part } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -55,6 +56,16 @@ export function PartsLibrary({ onPriceChange }: Props) {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [selectedPartIds, setSelectedPartIds] = useState<Set<string>>(new Set());
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [batchCategoryId, setBatchCategoryId] = useState('');
+
+  // 获取目录名称
+  const getCategoryName = useCallback((categoryId: string) => {
+    if (!categoryId) return '未分类';
+    const cat = state.categories.find(c => c.id === categoryId);
+    return cat ? cat.name : '未分类';
+  }, [state.categories]);
 
   // 构建当前选中目录及其所有子目录的ID集合
   const selectedCategoryIds = useMemo(() => {
@@ -193,6 +204,51 @@ export function PartsLibrary({ onPriceChange }: Props) {
     }
   }, [state.parts, selectedCategoryId, dispatch]);
 
+  // 批量编辑目录
+  const handleBatchEditCategory = () => {
+    if (selectedPartIds.size === 0) return;
+    // 从已选零件中获取共同目录作为默认值
+    const firstPart = state.parts.find(p => selectedPartIds.has(p.id));
+    setBatchCategoryId(firstPart?.categoryId || 'none');
+    setBatchDialogOpen(true);
+  };
+
+  const handleConfirmBatchCategory = () => {
+    const now = Date.now();
+    const categoryId = batchCategoryId === 'none' ? '' : batchCategoryId;
+    for (const partId of selectedPartIds) {
+      const part = state.parts.find(p => p.id === partId);
+      if (part) {
+        dispatch({
+          type: 'UPDATE_PART',
+          payload: { ...part, categoryId, updatedAt: now },
+        });
+      }
+    }
+    setBatchDialogOpen(false);
+    setSelectedPartIds(new Set());
+  };
+
+  const toggleSelectPart = (partId: string) => {
+    setSelectedPartIds(prev => {
+      const next = new Set(prev);
+      if (next.has(partId)) {
+        next.delete(partId);
+      } else {
+        next.add(partId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedPartIds.size === filteredParts.length) {
+      setSelectedPartIds(new Set());
+    } else {
+      setSelectedPartIds(new Set(filteredParts.map(p => p.id)));
+    }
+  };
+
   return (
     <div className="flex gap-4 h-full">
       {/* 左侧目录树 */}
@@ -246,6 +302,23 @@ export function PartsLibrary({ onPriceChange }: Props) {
             </SelectContent>
           </Select>
           <div className="flex-1" />
+          {selectedPartIds.size > 0 && (
+            <span className="text-xs text-blue-600 font-medium self-center">
+              已选 {selectedPartIds.size} 项
+            </span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBatchEditCategory}
+            disabled={selectedPartIds.size === 0}
+            className="h-9"
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v4a2 2 0 002 2h14a2 2 0 002-2V7m-6 2l-4 4-4-4" />
+            </svg>
+            批量编辑目录
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -270,6 +343,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
           <span>共 {state.parts.length} 个零件</span>
           {selectedCategoryId && <span>当前目录: {state.categories.find(c => c.id === selectedCategoryId)?.name || '未分类'}</span>}
           {search && <span>筛选结果: {filteredParts.length} 个</span>}
+          {selectedPartIds.size > 0 && <span className="text-blue-600 font-medium">已选 {selectedPartIds.size} 项</span>}
         </div>
 
         {/* 表格 */}
@@ -277,12 +351,19 @@ export function PartsLibrary({ onPriceChange }: Props) {
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+                <TableHead className="w-8">
+                  <Checkbox
+                    checked={filteredParts.length > 0 && selectedPartIds.size === filteredParts.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
                 <TableHead className="font-semibold text-slate-600">零件编号</TableHead>
                 <TableHead className="font-semibold text-slate-600">名称</TableHead>
                 <TableHead className="font-semibold text-slate-600">规格型号</TableHead>
                 <TableHead className="font-semibold text-slate-600 w-16">单位</TableHead>
                 <TableHead className="font-semibold text-slate-600 text-right">单价(元)</TableHead>
                 <TableHead className="font-semibold text-slate-600">供应商</TableHead>
+                <TableHead className="font-semibold text-slate-600">所属目录</TableHead>
                 <TableHead className="font-semibold text-slate-600">备注</TableHead>
                 <TableHead className="font-semibold text-slate-600">采购链接</TableHead>
                 <TableHead className="w-24 text-right">操作</TableHead>
@@ -291,13 +372,19 @@ export function PartsLibrary({ onPriceChange }: Props) {
             <TableBody>
               {filteredParts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12 text-slate-400">
+                  <TableCell colSpan={11} className="text-center py-12 text-slate-400">
                     {state.parts.length === 0 ? '暂无零件，点击"添加零件"或"批量导入"开始' : '未找到匹配的零件'}
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredParts.map(part => (
                   <TableRow key={part.id} className="group">
+                    <TableCell className="w-8">
+                      <Checkbox
+                        checked={selectedPartIds.has(part.id)}
+                        onCheckedChange={() => toggleSelectPart(part.id)}
+                      />
+                    </TableCell>
                     <TableCell className="font-mono text-xs text-blue-600 font-medium">{part.code}</TableCell>
                     <TableCell className="font-medium">{part.name}</TableCell>
                     <TableCell className="text-slate-500 text-sm">{part.spec}</TableCell>
@@ -306,6 +393,15 @@ export function PartsLibrary({ onPriceChange }: Props) {
                       {Number(part.price).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-slate-500 text-sm">{part.supplier || '-'}</TableCell>
+                    <TableCell className="text-slate-500 text-sm">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        part.categoryId
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'bg-slate-50 text-slate-400'
+                      }`}>
+                        {getCategoryName(part.categoryId)}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-slate-400 text-sm max-w-[150px] truncate">{part.remark || '-'}</TableCell>
                     <TableCell className="text-slate-400 text-sm max-w-[150px] truncate">
                       {part.purchaseLink ? (
@@ -496,6 +592,37 @@ export function PartsLibrary({ onPriceChange }: Props) {
                 onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
               >
                 删除
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* 批量编辑目录 */}
+        <Dialog open={batchDialogOpen} onOpenChange={setBatchDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>批量编辑目录</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <p className="text-sm text-slate-600">
+                已选择 <span className="font-medium text-blue-600">{selectedPartIds.size}</span> 个零件，请选择要设置的目标目录：
+              </p>
+              <Select value={batchCategoryId} onValueChange={setBatchCategoryId}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="选择目录" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">无目录</SelectItem>
+                  {state.categories.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setBatchDialogOpen(false)}>取消</Button>
+              <Button size="sm" onClick={handleConfirmBatchCategory} className="bg-blue-600 hover:bg-blue-700">
+                确认修改
               </Button>
             </div>
           </DialogContent>
