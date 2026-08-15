@@ -439,7 +439,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
                     <SelectValue placeholder="选择目录" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">无目录</SelectItem>
+                    <SelectItem value="none">无目录</SelectItem>
                     {state.categories.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
