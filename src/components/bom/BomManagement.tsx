@@ -276,7 +276,7 @@ export function BomManagement({ highlightedPartId }: Props) {
 
           {/* 数量和损耗 */}
           <span className="text-xs text-slate-400 ml-auto flex items-center gap-3">
-            <span>x{node.quantity}</span>
+            <span>x{node.quantity.toFixed(1)}</span>
             {node.wasteRate > 0 && <span className="text-orange-500">+{(node.wasteRate * 100).toFixed(1)}%</span>}
             <span className="font-mono text-amber-600 font-medium min-w-[70px] text-right">
               ¥{node.totalCost.toFixed(2)}
@@ -491,7 +491,7 @@ export function BomManagement({ highlightedPartId }: Props) {
                             <input
                               type="number"
                               min="0"
-                              step="0.01"
+                              step="0.1"
                               value={editingEntry?.id === entry.id ? editingEntry.quantity : entry.quantity}
                               onChange={(e) => {
                                 const val = parseFloat(e.target.value) || 0;
