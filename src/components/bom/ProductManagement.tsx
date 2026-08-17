@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef } from 'react';
 import { useAppState } from '@/lib/store';
-import { generateId, generateProductCode, calculateProductCost, calculateCostBreakdown } from '@/lib/bom-utils';
+import { generateId, generateProductCode, calculateProductCost, calculateCostBreakdown, getProductCoefficients } from '@/lib/bom-utils';
 import type { Product, CostCoefficients } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -277,6 +277,9 @@ export function ProductManagement() {
         {state.products.map(product => {
           const assemblies = (product.topAssemblyIds || []).map(id => state.assemblies.find(a => a.id === id)).filter(Boolean);
           const cost = product.topAssemblyIds?.reduce((sum, id) => sum + calculateProductCost([id], state), 0) || 0;
+          const coefficients = getProductCoefficients(product, state.defaultCoefficients);
+          const breakdown = calculateCostBreakdown(cost, coefficients);
+          const totalCost = breakdown.totalCost;
 
           return (
             <div
@@ -331,7 +334,7 @@ export function ProductManagement() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-slate-500">产品成本</span>
-                  <span className="font-mono text-amber-600 font-bold text-base">¥{cost.toFixed(2)}</span>
+                  <span className="font-mono text-amber-600 font-bold text-base">¥{totalCost.toFixed(2)}</span>
                 </div>
               </div>
             </div>
