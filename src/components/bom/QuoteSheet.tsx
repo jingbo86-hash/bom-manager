@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useAppState } from '@/lib/store';
 import { generateId, calculateProductCost, calculateCostBreakdown, getProductCoefficients } from '@/lib/bom-utils';
 import { numberToChinese, formatMoney, formatDate } from '@/lib/utils';
@@ -16,11 +16,65 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+const TEMPLATE_STORAGE_KEY = 'bom-quote-template';
+
+interface QuoteTemplate {
+  companyNameCN: string;
+  companyNameEN: string;
+  logoMain: string;
+  logoSub: string;
+  headerLabels: {
+    projectName: string;
+    contactPerson: string;
+    companyName: string;
+    phone: string;
+  };
+  title: string;
+  showCostBreakdown: boolean;
+  footer: string;
+  primaryColor: string;
+}
+
+const defaultTemplate: QuoteTemplate = {
+  companyNameCN: '中控交安',
+  companyNameEN: 'CHINA CONTROL TRAFFIC SECURE',
+  logoMain: 'CCTS',
+  logoSub: '中控交安',
+  headerLabels: {
+    projectName: '项目名称',
+    contactPerson: '姓名',
+    companyName: '单位名称',
+    phone: '电话',
+  },
+  title: '报价方案',
+  showCostBreakdown: true,
+  footer: '',
+  primaryColor: '#DC2626',
+};
+
+function loadTemplate(): QuoteTemplate {
+  if (typeof window === 'undefined') return defaultTemplate;
+  try {
+    const saved = localStorage.getItem(TEMPLATE_STORAGE_KEY);
+    if (saved) return { ...defaultTemplate, ...JSON.parse(saved) };
+  } catch { /* ignore */ }
+  return defaultTemplate;
+}
+
+function saveTemplate(tpl: QuoteTemplate) {
+  try {
+    localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(tpl));
+  } catch { /* ignore */ }
+}
+
 export function QuoteSheet() {
   const { state, dispatch } = useAppState();
   const printRef = useRef<HTMLDivElement>(null);
   const [showGenerator, setShowGenerator] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [template, setTemplate] = useState<QuoteTemplate>(loadTemplate);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [editTemplate, setEditTemplate] = useState<QuoteTemplate>(template);
 
   // 报价生成表单
   const [quoteForm, setQuoteForm] = useState({
@@ -131,22 +185,98 @@ export function QuoteSheet() {
     window.print();
   };
 
+  const handleSaveTemplate = () => {
+    setTemplate(editTemplate);
+    saveTemplate(editTemplate);
+    setTemplateDialogOpen(false);
+  };
+
+  const handleExportTemplate = () => {
+    const json = JSON.stringify(template, null, 2);
+    const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '报价单模板.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportTemplate = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const imported = JSON.parse(text) as QuoteTemplate;
+        if (imported.companyNameCN !== undefined && imported.logoMain !== undefined) {
+          const merged = { ...defaultTemplate, ...imported };
+          setTemplate(merged);
+          saveTemplate(merged);
+        } else {
+          alert('无效的模板文件');
+        }
+      } catch {
+        alert('模板文件解析失败');
+      }
+    };
+    input.click();
+  };
+
   return (
     <div className="space-y-4">
       {/* 工具栏 */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-slate-500">共 {sortedQuotes.length} 份报价单</div>
-        <Button
-          onClick={openGenerator}
-          size="sm"
-          className="bg-blue-600 hover:bg-blue-700"
-          disabled={state.products.length === 0}
-        >
-          <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          生成报价单
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { setEditTemplate(template); setTemplateDialogOpen(true); }}
+            className="h-9"
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            模板编辑
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportTemplate}
+            className="h-9"
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            导出模板
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleImportTemplate}
+            className="h-9"
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            导入模板
+          </Button>
+          <Button
+            onClick={openGenerator}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={state.products.length === 0}
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            生成报价单
+          </Button>
+        </div>
       </div>
 
       {state.products.length === 0 && (
@@ -336,39 +466,42 @@ export function QuoteSheet() {
               {/* 头部信息 */}
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-red-600 rounded flex items-center justify-center text-white font-bold text-xs leading-tight text-center">
-                    CCTS<br /><span className="text-[8px] font-normal">中控交安</span>
+                  <div
+                    className="w-12 h-12 rounded flex items-center justify-center text-white font-bold text-xs leading-tight text-center"
+                    style={{ backgroundColor: template.primaryColor }}
+                  >
+                    {template.logoMain}<br /><span className="text-[8px] font-normal">{template.logoSub}</span>
                   </div>
                   <div className="text-[9px] text-slate-400 leading-tight">
-                    CHINA CONTROL<br />TRAFFIC SECURE
+                    {template.companyNameEN}
                   </div>
                 </div>
                 <div className="text-right text-xs space-y-0.5">
-                  <p><span className="text-slate-500">项目名称:</span> {selectedQuote.projectName || '________'}</p>
-                  <p><span className="text-slate-500">姓名:</span> {selectedQuote.contactPerson || '________'}</p>
-                  <p><span className="text-slate-500">单位名称:</span> {selectedQuote.companyName || '________'}</p>
-                  <p><span className="text-slate-500">电话:</span> {selectedQuote.contactPhone || '________'}</p>
+                  <p><span className="text-slate-500">{template.headerLabels.projectName}:</span> {selectedQuote.projectName || '________'}</p>
+                  <p><span className="text-slate-500">{template.headerLabels.contactPerson}:</span> {selectedQuote.contactPerson || '________'}</p>
+                  <p><span className="text-slate-500">{template.headerLabels.companyName}:</span> {selectedQuote.companyName || '________'}</p>
+                  <p><span className="text-slate-500">{template.headerLabels.phone}:</span> {selectedQuote.contactPhone || '________'}</p>
                 </div>
               </div>
 
               {/* 标题 */}
-              <h1 className="text-center text-xl font-bold text-red-600 mb-6">{selectedQuote.title}</h1>
+              <h1 className="text-center text-xl font-bold mb-6" style={{ color: template.primaryColor }}>{selectedQuote.title}</h1>
 
               {/* 表格主体 */}
               <table className="w-full border-collapse text-xs mb-4">
                 <thead>
-                  <tr className="bg-red-600 text-white">
-                    <th className="border border-red-600 px-2 py-1.5 text-center w-8">序号</th>
-                    <th className="border border-red-600 px-2 py-1.5 text-left">产品名称</th>
-                    <th className="border border-red-600 px-2 py-1.5 text-left">品牌</th>
-                    <th className="border border-red-600 px-2 py-1.5 text-left">型号</th>
-                    <th className="border border-red-600 px-2 py-1.5 text-left">技术参数</th>
-                    <th className="border border-red-600 px-2 py-1.5 text-center w-12">数量</th>
-                    <th className="border border-red-600 px-2 py-1.5 text-center w-10">单位</th>
-                    <th className="border border-red-600 px-2 py-1.5 text-right w-20">单价</th>
-                    <th className="border border-red-600 px-2 py-1.5 text-right w-20">金额</th>
-                    <th className="border border-red-600 px-2 py-1.5 text-left">备注</th>
-                    <th className="border border-red-600 px-2 py-1.5 text-center w-16">图片</th>
+                  <tr style={{ backgroundColor: template.primaryColor, color: '#fff' }}>
+                    <th className="px-2 py-1.5 text-center w-8" style={{ borderColor: template.primaryColor }}>序号</th>
+                    <th className="px-2 py-1.5 text-left" style={{ borderColor: template.primaryColor }}>产品名称</th>
+                    <th className="px-2 py-1.5 text-left" style={{ borderColor: template.primaryColor }}>品牌</th>
+                    <th className="px-2 py-1.5 text-left" style={{ borderColor: template.primaryColor }}>型号</th>
+                    <th className="px-2 py-1.5 text-left" style={{ borderColor: template.primaryColor }}>技术参数</th>
+                    <th className="px-2 py-1.5 text-center w-12" style={{ borderColor: template.primaryColor }}>数量</th>
+                    <th className="px-2 py-1.5 text-center w-10" style={{ borderColor: template.primaryColor }}>单位</th>
+                    <th className="px-2 py-1.5 text-right w-20" style={{ borderColor: template.primaryColor }}>单价</th>
+                    <th className="px-2 py-1.5 text-right w-20" style={{ borderColor: template.primaryColor }}>金额</th>
+                    <th className="px-2 py-1.5 text-left" style={{ borderColor: template.primaryColor }}>备注</th>
+                    <th className="px-2 py-1.5 text-center w-16" style={{ borderColor: template.primaryColor }}>图片</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -419,7 +552,7 @@ export function QuoteSheet() {
               </div>
 
               {/* 费用明细 */}
-              {selectedQuote.products[0]?.costBreakdown && (
+              {template.showCostBreakdown && selectedQuote.products[0]?.costBreakdown && (
                 <div className="mb-4">
                   <h3 className="text-sm font-semibold text-slate-700 mb-2">费用明细</h3>
                   <table className="w-full border-collapse text-xs">
