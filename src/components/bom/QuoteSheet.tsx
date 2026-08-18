@@ -45,7 +45,7 @@ const defaultTemplate: QuoteTemplate = {
   logoImage: '',
   headerLabels: {
     projectName: '项目名称',
-    contactPerson: '姓名',
+    contactPerson: '联系人',
     companyName: '单位名称',
     phone: '电话',
   },
@@ -59,7 +59,12 @@ function loadTemplate(): QuoteTemplate {
   if (typeof window === 'undefined') return defaultTemplate;
   try {
     const saved = localStorage.getItem(TEMPLATE_STORAGE_KEY);
-    if (saved) return { ...defaultTemplate, ...JSON.parse(saved) };
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // 始终使用默认的头部字段标签，确保与表单一致
+      parsed.headerLabels = { ...defaultTemplate.headerLabels };
+      return { ...defaultTemplate, ...parsed };
+    }
   } catch { /* ignore */ }
   return defaultTemplate;
 }
