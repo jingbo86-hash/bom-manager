@@ -369,7 +369,7 @@ export function QuoteSheet() {
           <div className="space-y-4 py-2">
             {/* 头部信息 */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 col-span-2">
                 <Label className="text-xs">报价方案标题</Label>
                 <Input
                   value={quoteForm.title}
@@ -378,49 +378,49 @@ export function QuoteSheet() {
                   className="h-9"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">项目名称</Label>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs whitespace-nowrap w-16">项目名称：</Label>
                 <Input
                   value={quoteForm.projectName}
                   onChange={e => setQuoteForm(f => ({ ...f, projectName: e.target.value }))}
                   placeholder="项目名称"
-                  className="h-9"
+                  className="h-9 flex-1"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">单位名称</Label>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs whitespace-nowrap w-16">单位名称：</Label>
                 <Input
                   value={quoteForm.companyName}
                   onChange={e => setQuoteForm(f => ({ ...f, companyName: e.target.value }))}
                   placeholder="单位名称"
-                  className="h-9"
+                  className="h-9 flex-1"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">联系人</Label>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs whitespace-nowrap w-16">联系人：</Label>
                 <Input
                   value={quoteForm.contactPerson}
                   onChange={e => setQuoteForm(f => ({ ...f, contactPerson: e.target.value }))}
                   placeholder="联系人"
-                  className="h-9"
+                  className="h-9 flex-1"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">电话</Label>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs whitespace-nowrap w-16">电话：</Label>
                 <Input
                   value={quoteForm.contactPhone}
                   onChange={e => setQuoteForm(f => ({ ...f, contactPhone: e.target.value }))}
                   placeholder="电话"
-                  className="h-9"
+                  className="h-9 flex-1"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">利润率 (%)</Label>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs whitespace-nowrap w-16">利润率(%)：</Label>
                 <Input
                   type="number"
                   value={quoteForm.profitMargin}
                   onChange={e => setQuoteForm(f => ({ ...f, profitMargin: parseFloat(e.target.value) || 0 }))}
-                  className="h-9"
+                  className="h-9 flex-1"
                   min={0}
                   max={100}
                 />
