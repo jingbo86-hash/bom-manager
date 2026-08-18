@@ -24,6 +24,7 @@ interface QuoteTemplate {
   companyNameEN: string;
   logoMain: string;
   logoSub: string;
+  logoImage: string;
   headerLabels: {
     projectName: string;
     contactPerson: string;
@@ -41,6 +42,7 @@ const defaultTemplate: QuoteTemplate = {
   companyNameEN: 'CHINA CONTROL TRAFFIC SECURE',
   logoMain: 'CCTS',
   logoSub: '中控交安',
+  logoImage: '',
   headerLabels: {
     projectName: '项目名称',
     contactPerson: '姓名',
@@ -202,6 +204,7 @@ export function QuoteSheet() {
       ['公司英文名', template.companyNameEN],
       ['Logo主文字', template.logoMain],
       ['Logo副文字', template.logoSub],
+      ['Logo图片', template.logoImage],
       ['主题色', template.primaryColor],
       ['报价标题', template.title],
       ['项目名称标签', template.headerLabels.projectName],
@@ -247,6 +250,7 @@ export function QuoteSheet() {
           companyNameEN: map.get('公司英文名') || defaultTemplate.companyNameEN,
           logoMain: map.get('Logo主文字') || defaultTemplate.logoMain,
           logoSub: map.get('Logo副文字') || defaultTemplate.logoSub,
+          logoImage: map.get('Logo图片') || defaultTemplate.logoImage,
           primaryColor: map.get('主题色') || defaultTemplate.primaryColor,
           title: map.get('报价标题') || defaultTemplate.title,
           headerLabels: {
@@ -508,12 +512,16 @@ export function QuoteSheet() {
               {/* 头部信息 */}
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="w-12 h-12 rounded flex items-center justify-center text-white font-bold text-xs leading-tight text-center"
-                    style={{ backgroundColor: template.primaryColor }}
-                  >
-                    {template.logoMain}<br /><span className="text-[8px] font-normal">{template.logoSub}</span>
-                  </div>
+                  {template.logoImage ? (
+                    <img src={template.logoImage} alt="Logo" className="h-12 object-contain" />
+                  ) : (
+                    <div
+                      className="w-12 h-12 rounded flex items-center justify-center text-white font-bold text-xs leading-tight text-center"
+                      style={{ backgroundColor: template.primaryColor }}
+                    >
+                      {template.logoMain}<br /><span className="text-[8px] font-normal">{template.logoSub}</span>
+                    </div>
+                  )}
                   <div className="text-[9px] text-slate-400 leading-tight">
                     {template.companyNameEN}
                   </div>
@@ -671,6 +679,52 @@ export function QuoteSheet() {
               <div className="space-y-2">
                 <Label>Logo副文字</Label>
                 <Input value={editTemplate.logoSub} onChange={e => setEditTemplate({ ...editTemplate, logoSub: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Logo图片</Label>
+                <div className="flex gap-2 items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const fileInput = document.getElementById('logo-upload') as HTMLInputElement;
+                      fileInput?.click();
+                    }}
+                  >
+                    选择图片
+                  </Button>
+                  {editTemplate.logoImage && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500"
+                      onClick={() => setEditTemplate({ ...editTemplate, logoImage: '' })}
+                    >
+                      清除
+                    </Button>
+                  )}
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          setEditTemplate({ ...editTemplate, logoImage: ev.target?.result as string });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </div>
+                {editTemplate.logoImage && (
+                  <div className="mt-1 p-2 border rounded bg-slate-50">
+                    <img src={editTemplate.logoImage} alt="预览" className="h-10 object-contain" />
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>主题色</Label>
