@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-const TEMPLATE_STORAGE_KEY = 'bom-quote-template';
+const TEMPLATE_STORAGE_KEY = 'bom-quote-template-v2';
 
 interface QuoteTemplate {
   companyNameCN: string;
