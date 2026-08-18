@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import * as XLSX from 'xlsx';
 import {
   Dialog,
   DialogContent,
@@ -192,12 +193,34 @@ export function QuoteSheet() {
   };
 
   const handleExportTemplate = () => {
-    const json = JSON.stringify(template, null, 2);
-    const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+    const wb = XLSX.utils.book_new();
+
+    // 模板配置表
+    const configData = [
+      ['字段', '值'],
+      ['公司中文名', template.companyNameCN],
+      ['公司英文名', template.companyNameEN],
+      ['Logo主文字', template.logoMain],
+      ['Logo副文字', template.logoSub],
+      ['主题色', template.primaryColor],
+      ['报价标题', template.title],
+      ['项目名称标签', template.headerLabels.projectName],
+      ['联系人标签', template.headerLabels.contactPerson],
+      ['单位名称标签', template.headerLabels.companyName],
+      ['电话标签', template.headerLabels.phone],
+      ['显示费用明细', template.showCostBreakdown ? '是' : '否'],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(configData);
+    ws['!cols'] = [{ wch: 16 }, { wch: 40 }];
+    XLSX.utils.book_append_sheet(wb, ws, '模板配置');
+
+    // 生成文件
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = '报价单模板.json';
+    a.download = '报价单模板.xlsx';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -205,22 +228,41 @@ export function QuoteSheet() {
   const handleImportTemplate = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json';
+    input.accept = '.xlsx,.xls';
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
       try {
-        const text = await file.text();
-        const imported = JSON.parse(text) as QuoteTemplate;
-        if (imported.companyNameCN !== undefined && imported.logoMain !== undefined) {
-          const merged = { ...defaultTemplate, ...imported };
-          setTemplate(merged);
-          saveTemplate(merged);
-        } else {
-          alert('无效的模板文件');
+        const data = await file.arrayBuffer();
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets['模板配置'];
+        if (!ws) { alert('无效的模板文件：未找到"模板配置"工作表'); return; }
+        const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 }) as string[][];
+        const map = new Map<string, string>();
+        for (const row of rows) {
+          if (row[0] && row[1] !== undefined) map.set(row[0].trim(), String(row[1]));
         }
-      } catch {
-        alert('模板文件解析失败');
+        const imported: Partial<QuoteTemplate> = {
+          companyNameCN: map.get('公司中文名') || defaultTemplate.companyNameCN,
+          companyNameEN: map.get('公司英文名') || defaultTemplate.companyNameEN,
+          logoMain: map.get('Logo主文字') || defaultTemplate.logoMain,
+          logoSub: map.get('Logo副文字') || defaultTemplate.logoSub,
+          primaryColor: map.get('主题色') || defaultTemplate.primaryColor,
+          title: map.get('报价标题') || defaultTemplate.title,
+          headerLabels: {
+            projectName: map.get('项目名称标签') || defaultTemplate.headerLabels.projectName,
+            contactPerson: map.get('联系人标签') || defaultTemplate.headerLabels.contactPerson,
+            companyName: map.get('单位名称标签') || defaultTemplate.headerLabels.companyName,
+            phone: map.get('电话标签') || defaultTemplate.headerLabels.phone,
+          },
+          showCostBreakdown: (map.get('显示费用明细') || '是') === '是',
+        };
+        const merged = { ...defaultTemplate, ...imported };
+        setTemplate(merged);
+        saveTemplate(merged);
+        alert('模板导入成功');
+      } catch (e) {
+        alert('模板文件解析失败：' + (e instanceof Error ? e.message : '未知错误'));
       }
     };
     input.click();
@@ -603,6 +645,75 @@ export function QuoteSheet() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 模板编辑对话框 */}
+      <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>编辑报价模板</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>公司中文名</Label>
+                <Input value={editTemplate.companyNameCN} onChange={e => setEditTemplate({ ...editTemplate, companyNameCN: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>公司英文名</Label>
+                <Input value={editTemplate.companyNameEN} onChange={e => setEditTemplate({ ...editTemplate, companyNameEN: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Logo主文字</Label>
+                <Input value={editTemplate.logoMain} onChange={e => setEditTemplate({ ...editTemplate, logoMain: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Logo副文字</Label>
+                <Input value={editTemplate.logoSub} onChange={e => setEditTemplate({ ...editTemplate, logoSub: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>主题色</Label>
+                <div className="flex gap-2 items-center">
+                  <input type="color" value={editTemplate.primaryColor} onChange={e => setEditTemplate({ ...editTemplate, primaryColor: e.target.value })} className="w-10 h-9 rounded border cursor-pointer" />
+                  <Input value={editTemplate.primaryColor} onChange={e => setEditTemplate({ ...editTemplate, primaryColor: e.target.value })} className="flex-1 font-mono" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>报价标题</Label>
+                <Input value={editTemplate.title} onChange={e => setEditTemplate({ ...editTemplate, title: e.target.value })} />
+              </div>
+            </div>
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium mb-3">头部字段标签</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>项目名称</Label>
+                  <Input value={editTemplate.headerLabels.projectName} onChange={e => setEditTemplate({ ...editTemplate, headerLabels: { ...editTemplate.headerLabels, projectName: e.target.value } })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>联系人</Label>
+                  <Input value={editTemplate.headerLabels.contactPerson} onChange={e => setEditTemplate({ ...editTemplate, headerLabels: { ...editTemplate.headerLabels, contactPerson: e.target.value } })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>单位名称</Label>
+                  <Input value={editTemplate.headerLabels.companyName} onChange={e => setEditTemplate({ ...editTemplate, headerLabels: { ...editTemplate.headerLabels, companyName: e.target.value } })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>电话</Label>
+                  <Input value={editTemplate.headerLabels.phone} onChange={e => setEditTemplate({ ...editTemplate, headerLabels: { ...editTemplate.headerLabels, phone: e.target.value } })} />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 pt-2">
+              <Checkbox id="showCost" checked={editTemplate.showCostBreakdown} onCheckedChange={v => setEditTemplate({ ...editTemplate, showCostBreakdown: !!v })} />
+              <Label htmlFor="showCost" className="cursor-pointer">显示费用明细</Label>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setTemplateDialogOpen(false)}>取消</Button>
+            <Button size="sm" onClick={handleSaveTemplate}>保存模板</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
