@@ -379,38 +379,38 @@ export function QuoteSheet() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Label className="text-xs whitespace-nowrap w-16">项目名称：</Label>
+                <Label className="text-xs whitespace-nowrap w-16">{template.headerLabels.projectName}：</Label>
                 <Input
                   value={quoteForm.projectName}
                   onChange={e => setQuoteForm(f => ({ ...f, projectName: e.target.value }))}
-                  placeholder="项目名称"
+                  placeholder={template.headerLabels.projectName}
                   className="h-9 flex-1"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Label className="text-xs whitespace-nowrap w-16">单位名称：</Label>
+                <Label className="text-xs whitespace-nowrap w-16">{template.headerLabels.companyName}：</Label>
                 <Input
                   value={quoteForm.companyName}
                   onChange={e => setQuoteForm(f => ({ ...f, companyName: e.target.value }))}
-                  placeholder="单位名称"
+                  placeholder={template.headerLabels.companyName}
                   className="h-9 flex-1"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Label className="text-xs whitespace-nowrap w-16">联系人：</Label>
+                <Label className="text-xs whitespace-nowrap w-16">{template.headerLabels.contactPerson}：</Label>
                 <Input
                   value={quoteForm.contactPerson}
                   onChange={e => setQuoteForm(f => ({ ...f, contactPerson: e.target.value }))}
-                  placeholder="联系人"
+                  placeholder={template.headerLabels.contactPerson}
                   className="h-9 flex-1"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Label className="text-xs whitespace-nowrap w-16">电话：</Label>
+                <Label className="text-xs whitespace-nowrap w-16">{template.headerLabels.phone}：</Label>
                 <Input
                   value={quoteForm.contactPhone}
                   onChange={e => setQuoteForm(f => ({ ...f, contactPhone: e.target.value }))}
-                  placeholder="电话"
+                  placeholder={template.headerLabels.phone}
                   className="h-9 flex-1"
                 />
               </div>
