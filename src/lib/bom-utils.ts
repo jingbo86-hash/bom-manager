@@ -322,7 +322,8 @@ export function calculateProductCost(
   state: AppState
 ): number {
   let total = 0;
-  for (const id of topAssemblyIds) {
+  const ids = topAssemblyIds || [];
+  for (const id of ids) {
     total += calculateAssemblyCost(
       id,
       state.parts,

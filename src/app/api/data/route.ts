@@ -96,7 +96,9 @@ function rowToCamel(row: any, type?: string): any {
   if (result.products && typeof result.products === 'string') {
     try { result.products = JSON.parse(result.products); } catch { result.products = []; }
   }
-  if (result.topAssemblyIds && typeof result.topAssemblyIds === 'string') {
+  if (result.topAssemblyIds === null || result.topAssemblyIds === undefined) {
+    result.topAssemblyIds = [];
+  } else if (typeof result.topAssemblyIds === 'string') {
     try { result.topAssemblyIds = JSON.parse(result.topAssemblyIds); } catch { result.topAssemblyIds = []; }
   }
   return result;
