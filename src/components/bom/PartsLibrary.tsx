@@ -348,7 +348,8 @@ export function PartsLibrary({ onPriceChange }: Props) {
 
         {/* 表格 */}
         <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <Table>
+          <div className="overflow-hidden">
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
                 <TableHead className="w-8">
@@ -357,15 +358,15 @@ export function PartsLibrary({ onPriceChange }: Props) {
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
-                <TableHead className="font-semibold text-slate-600">零件编号</TableHead>
-                <TableHead className="font-semibold text-slate-600">名称</TableHead>
-                <TableHead className="font-semibold text-slate-600">规格型号</TableHead>
-                <TableHead className="font-semibold text-slate-600 w-16">单位</TableHead>
-                <TableHead className="font-semibold text-slate-600 text-right">单价(元)</TableHead>
-                <TableHead className="font-semibold text-slate-600">供应商</TableHead>
-                <TableHead className="font-semibold text-slate-600">所属目录</TableHead>
-                <TableHead className="font-semibold text-slate-600">备注</TableHead>
-                <TableHead className="font-semibold text-slate-600">采购链接</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[100px]">零件编号</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[160px]">名称</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[180px]">规格型号</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-14">单位</TableHead>
+                <TableHead className="font-semibold text-slate-600 text-right w-[70px]">单价(元)</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[100px]">供应商</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[90px]">所属目录</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[100px]">备注</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[130px]">采购链接</TableHead>
                 <TableHead className="w-24 text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
@@ -385,27 +386,27 @@ export function PartsLibrary({ onPriceChange }: Props) {
                         onCheckedChange={() => toggleSelectPart(part.id)}
                       />
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-blue-600 font-medium">{part.code}</TableCell>
-                    <TableCell className="font-medium">{part.name}</TableCell>
-                    <TableCell className="text-slate-500 text-sm">{part.spec}</TableCell>
+                    <TableCell className="font-mono text-xs text-blue-600 font-medium truncate">{part.code}</TableCell>
+                    <TableCell className="font-medium truncate" title={part.name}>{part.name}</TableCell>
+                    <TableCell className="text-slate-500 text-sm truncate" title={part.spec}>{part.spec}</TableCell>
                     <TableCell className="text-slate-500 text-sm">{part.unit}</TableCell>
                     <TableCell className="text-right font-mono text-sm font-medium text-amber-600">
                       {Number(part.price).toFixed(2)}
                     </TableCell>
-                    <TableCell className="text-slate-500 text-sm">{part.supplier || '-'}</TableCell>
-                    <TableCell className="text-slate-500 text-sm">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                    <TableCell className="text-slate-500 text-sm truncate" title={part.supplier}>{part.supplier || '-'}</TableCell>
+                    <TableCell className="text-slate-500 text-sm truncate">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium truncate max-w-full ${
                         part.categoryId
                           ? 'bg-blue-50 text-blue-700'
                           : 'bg-slate-50 text-slate-400'
-                      }`}>
+                      }`} title={getCategoryName(part.categoryId)}>
                         {getCategoryName(part.categoryId)}
                       </span>
                     </TableCell>
-                    <TableCell className="text-slate-400 text-sm max-w-[150px] truncate">{part.remark || '-'}</TableCell>
-                    <TableCell className="text-slate-400 text-sm max-w-[150px] truncate">
+                    <TableCell className="text-slate-400 text-sm truncate" title={part.remark}>{part.remark || '-'}</TableCell>
+                    <TableCell className="text-slate-400 text-sm truncate">
                       {part.purchaseLink ? (
-                        <a href={part.purchaseLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate block">
+                        <a href={part.purchaseLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate block" title={part.purchaseLink}>
                           {part.purchaseLink}
                         </a>
                       ) : '-'}
@@ -437,6 +438,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
 
         {/* 添加/编辑对话框 */}
