@@ -31,6 +31,12 @@ interface QuoteTemplate {
     companyName: string;
     phone: string;
   };
+  headerValues: {
+    projectName: string;
+    contactPerson: string;
+    companyName: string;
+    phone: string;
+  };
   title: string;
   showCostBreakdown: boolean;
   footer: string;
@@ -48,6 +54,12 @@ const defaultTemplate: QuoteTemplate = {
     contactPerson: '联系人',
     companyName: '单位名称',
     phone: '电话',
+  },
+  headerValues: {
+    projectName: '',
+    contactPerson: '',
+    companyName: '',
+    phone: '',
   },
   title: '报价方案',
   showCostBreakdown: true,
@@ -216,6 +228,10 @@ export function QuoteSheet() {
       ['联系人标签', template.headerLabels.contactPerson],
       ['单位名称标签', template.headerLabels.companyName],
       ['电话标签', template.headerLabels.phone],
+      ['项目名称', template.headerValues.projectName],
+      ['联系人', template.headerValues.contactPerson],
+      ['单位名称', template.headerValues.companyName],
+      ['电话', template.headerValues.phone],
       ['显示费用明细', template.showCostBreakdown ? '是' : '否'],
     ];
     const ws = XLSX.utils.aoa_to_sheet(configData);
@@ -263,6 +279,12 @@ export function QuoteSheet() {
             contactPerson: map.get('联系人标签') || defaultTemplate.headerLabels.contactPerson,
             companyName: map.get('单位名称标签') || defaultTemplate.headerLabels.companyName,
             phone: map.get('电话标签') || defaultTemplate.headerLabels.phone,
+          },
+          headerValues: {
+            projectName: map.get('项目名称') || defaultTemplate.headerValues.projectName,
+            contactPerson: map.get('联系人') || defaultTemplate.headerValues.contactPerson,
+            companyName: map.get('单位名称') || defaultTemplate.headerValues.companyName,
+            phone: map.get('电话') || defaultTemplate.headerValues.phone,
           },
           showCostBreakdown: (map.get('显示费用明细') || '是') === '是',
         };
@@ -534,19 +556,19 @@ export function QuoteSheet() {
                 <div className="text-right text-xs space-y-1">
                   <p className="flex items-center justify-end gap-1">
                     <span className="text-slate-500 shrink-0">{template.headerLabels.projectName}:</span>
-                    <span className="border-b border-dashed border-slate-300 min-w-[120px] inline-block text-center text-slate-700">{selectedQuote.projectName || ''}</span>
+                    <span className="border-b border-dashed border-slate-300 min-w-[120px] inline-block text-center text-slate-700">{template.headerValues.projectName || ''}</span>
                   </p>
                   <p className="flex items-center justify-end gap-1">
                     <span className="text-slate-500 shrink-0">{template.headerLabels.contactPerson}:</span>
-                    <span className="border-b border-dashed border-slate-300 min-w-[120px] inline-block text-center text-slate-700">{selectedQuote.contactPerson || ''}</span>
+                    <span className="border-b border-dashed border-slate-300 min-w-[120px] inline-block text-center text-slate-700">{template.headerValues.contactPerson || ''}</span>
                   </p>
                   <p className="flex items-center justify-end gap-1">
                     <span className="text-slate-500 shrink-0">{template.headerLabels.companyName}:</span>
-                    <span className="border-b border-dashed border-slate-300 min-w-[120px] inline-block text-center text-slate-700">{selectedQuote.companyName || ''}</span>
+                    <span className="border-b border-dashed border-slate-300 min-w-[120px] inline-block text-center text-slate-700">{template.headerValues.companyName || ''}</span>
                   </p>
                   <p className="flex items-center justify-end gap-1">
                     <span className="text-slate-500 shrink-0">{template.headerLabels.phone}:</span>
-                    <span className="border-b border-dashed border-slate-300 min-w-[120px] inline-block text-center text-slate-700">{selectedQuote.contactPhone || ''}</span>
+                    <span className="border-b border-dashed border-slate-300 min-w-[120px] inline-block text-center text-slate-700">{template.headerValues.phone || ''}</span>
                   </p>
                 </div>
               </div>
@@ -773,6 +795,25 @@ export function QuoteSheet() {
                 <div className="space-y-2">
                   <Label>电话</Label>
                   <Input value={editTemplate.headerLabels.phone} onChange={e => setEditTemplate({ ...editTemplate, headerLabels: { ...editTemplate.headerLabels, phone: e.target.value } })} />
+                </div>
+              </div>
+              <h4 className="text-sm font-medium mb-3 mt-4">头部字段内容</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{editTemplate.headerLabels.projectName}</Label>
+                  <Input value={editTemplate.headerValues.projectName} onChange={e => setEditTemplate({ ...editTemplate, headerValues: { ...editTemplate.headerValues, projectName: e.target.value } })} placeholder="输入项目名称" />
+                </div>
+                <div className="space-y-2">
+                  <Label>{editTemplate.headerLabels.contactPerson}</Label>
+                  <Input value={editTemplate.headerValues.contactPerson} onChange={e => setEditTemplate({ ...editTemplate, headerValues: { ...editTemplate.headerValues, contactPerson: e.target.value } })} placeholder="输入联系人" />
+                </div>
+                <div className="space-y-2">
+                  <Label>{editTemplate.headerLabels.companyName}</Label>
+                  <Input value={editTemplate.headerValues.companyName} onChange={e => setEditTemplate({ ...editTemplate, headerValues: { ...editTemplate.headerValues, companyName: e.target.value } })} placeholder="输入单位名称" />
+                </div>
+                <div className="space-y-2">
+                  <Label>{editTemplate.headerLabels.phone}</Label>
+                  <Input value={editTemplate.headerValues.phone} onChange={e => setEditTemplate({ ...editTemplate, headerValues: { ...editTemplate.headerValues, phone: e.target.value } })} placeholder="输入电话" />
                 </div>
               </div>
             </div>
