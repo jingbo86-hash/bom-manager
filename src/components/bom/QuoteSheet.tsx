@@ -574,7 +574,7 @@ export function QuoteSheet() {
               </div>
 
               {/* 标题 */}
-              <h1 className="text-center text-xl font-bold mb-6" style={{ color: template.primaryColor }}>{selectedQuote.title}</h1>
+              <h1 className="text-center text-xl font-bold mb-6" style={{ color: template.primaryColor }}>{template.title}</h1>
 
               {/* 表格主体 */}
               <table className="w-full border-collapse text-xs mb-4">
