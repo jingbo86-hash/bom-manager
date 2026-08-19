@@ -43,6 +43,7 @@ type Action =
   | { type: 'DELETE_PRODUCT'; payload: string }
   | { type: 'UPDATE_DEFAULT_COEFFICIENTS'; payload: CostCoefficients }
   | { type: 'ADD_QUOTE'; payload: Quote }
+  | { type: 'DELETE_QUOTE'; payload: string }
   | { type: 'ADD_CATEGORY'; payload: Category }
   | { type: 'UPDATE_CATEGORY'; payload: Category }
   | { type: 'DELETE_CATEGORY'; payload: string };
@@ -171,6 +172,8 @@ function appReducer(state: AppState, action: Action): AppState {
     // 报价
     case 'ADD_QUOTE':
       return { ...state, quotes: [...state.quotes, action.payload] };
+    case 'DELETE_QUOTE':
+      return { ...state, quotes: state.quotes.filter(q => q.id !== action.payload) };
 
     // 目录
     case 'ADD_CATEGORY':
