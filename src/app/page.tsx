@@ -7,6 +7,7 @@ import { PartsLibrary } from '@/components/bom/PartsLibrary';
 import { BomManagement } from '@/components/bom/BomManagement';
 import { ProductManagement } from '@/components/bom/ProductManagement';
 import { QuoteSheet } from '@/components/bom/QuoteSheet';
+import { generateSampleData } from '@/lib/generate-sample-data';
 
 const NAV_ITEMS: { key: PageKey; label: string; icon: string }[] = [
   { key: 'parts', label: '零件库', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
@@ -21,7 +22,9 @@ export default function Home() {
   const [migrating, setMigrating] = useState(false);
   const [migrated, setMigrated] = useState(false);
   const [migrateMsg, setMigrateMsg] = useState('');
-  const { state, loading } = useAppState();
+  const [generating, setGenerating] = useState(false);
+  const [genMsg, setGenMsg] = useState('');
+  const { state, loading, dispatch } = useAppState();
 
   // 检查是否有 localStorage 数据需要迁移
   useEffect(() => {
@@ -55,7 +58,6 @@ export default function Home() {
         setMigrated(true);
         setMigrateMsg(result.message);
         localStorage.removeItem('bom-management-system');
-        // 刷新页面以从 MySQL 重新加载
         window.location.reload();
       } else {
         setMigrateMsg(result.error || '迁移失败');
@@ -64,6 +66,29 @@ export default function Home() {
       setMigrateMsg('迁移出错: ' + err.message);
     } finally {
       setMigrating(false);
+    }
+  };
+
+  const handleGenerateData = () => {
+    if (generating) return;
+    setGenerating(true);
+    setGenMsg('');
+
+    try {
+      const sampleData = generateSampleData();
+      // 保存到 localStorage
+      localStorage.setItem('bom-management-system', JSON.stringify(sampleData));
+      // 更新状态
+      dispatch({ type: 'LOAD_STATE', payload: sampleData });
+      setGenMsg('✓ 示例数据已生成，共 ' + sampleData.parts.length + ' 个零件、' +
+        sampleData.assemblies.length + ' 个组件、' +
+        sampleData.products.length + ' 个产品');
+      // 3秒后清除消息
+      setTimeout(() => setGenMsg(''), 3000);
+    } catch (err: any) {
+      setGenMsg('生成失败: ' + err.message);
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -137,6 +162,21 @@ export default function Home() {
             {NAV_ITEMS.find(n => n.key === activePage)?.label}
           </h1>
           <div className="flex items-center gap-3">
+            {/* 生成示例数据 */}
+            <button
+              onClick={handleGenerateData}
+              disabled={generating || loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors disabled:opacity-50"
+            >
+              {generating ? (
+                <><div className="w-3 h-3 border border-blue-700 border-t-transparent rounded-full animate-spin" /> 生成中...</>
+              ) : (
+                <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c.63.63.184 1.707-.707 1.707H5.707c-.891 0-1.336-1.077-.707-1.707l5-5A2 2 0 0010.586 11.172V5l-1-1z" /></svg> 生成示例数据</>
+              )}
+            </button>
+            {genMsg && (
+              <span className="text-xs text-emerald-600 font-medium">{genMsg}</span>
+            )}
             {/* 迁移提示 */}
             {migrateMsg && !migrated && (
               <button
