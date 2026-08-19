@@ -531,11 +531,23 @@ export function QuoteSheet() {
                     {template.companyNameEN}
                   </div>
                 </div>
-                <div className="text-right text-xs space-y-0.5">
-                  <p><span className="text-slate-500">{template.headerLabels.projectName}:</span> {selectedQuote.projectName || '________'}</p>
-                  <p><span className="text-slate-500">{template.headerLabels.contactPerson}:</span> {selectedQuote.contactPerson || '________'}</p>
-                  <p><span className="text-slate-500">{template.headerLabels.companyName}:</span> {selectedQuote.companyName || '________'}</p>
-                  <p><span className="text-slate-500">{template.headerLabels.phone}:</span> {selectedQuote.contactPhone || '________'}</p>
+                <div className="text-right text-xs space-y-1">
+                  <p className="flex items-center justify-end gap-1">
+                    <span className="text-slate-500 shrink-0">{template.headerLabels.projectName}:</span>
+                    <span className="border-b border-dashed border-slate-300 min-w-[120px] inline-block text-center text-slate-700">{selectedQuote.projectName || ''}</span>
+                  </p>
+                  <p className="flex items-center justify-end gap-1">
+                    <span className="text-slate-500 shrink-0">{template.headerLabels.contactPerson}:</span>
+                    <span className="border-b border-dashed border-slate-300 min-w-[120px] inline-block text-center text-slate-700">{selectedQuote.contactPerson || ''}</span>
+                  </p>
+                  <p className="flex items-center justify-end gap-1">
+                    <span className="text-slate-500 shrink-0">{template.headerLabels.companyName}:</span>
+                    <span className="border-b border-dashed border-slate-300 min-w-[120px] inline-block text-center text-slate-700">{selectedQuote.companyName || ''}</span>
+                  </p>
+                  <p className="flex items-center justify-end gap-1">
+                    <span className="text-slate-500 shrink-0">{template.headerLabels.phone}:</span>
+                    <span className="border-b border-dashed border-slate-300 min-w-[120px] inline-block text-center text-slate-700">{selectedQuote.contactPhone || ''}</span>
+                  </p>
                 </div>
               </div>
 
