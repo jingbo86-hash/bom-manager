@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { PageKey } from '@/lib/types';
 import { useAppState } from '@/lib/store';
 import { PartsLibrary } from '@/components/bom/PartsLibrary';
@@ -19,56 +19,15 @@ const NAV_ITEMS: { key: PageKey; label: string; icon: string }[] = [
 export default function Home() {
   const [activePage, setActivePage] = useState<PageKey>('parts');
   const [highlightedPartId, setHighlightedPartId] = useState<string | null>(null);
-  const [migrating, setMigrating] = useState(false);
-  const [migrated, setMigrated] = useState(false);
-  const [migrateMsg, setMigrateMsg] = useState('');
   const [generating, setGenerating] = useState(false);
   const [genMsg, setGenMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { state, loading, dispatch } = useAppState();
 
-  // 检查是否有 localStorage 数据需要迁移
-  useEffect(() => {
-    const hasLocalData = !!localStorage.getItem('bom-management-system');
-    if (hasLocalData) {
-      setMigrateMsg('检测到本地数据，建议迁移到MySQL');
-    }
-  }, []);
-
   const handlePriceChange = useCallback((partId: string) => {
     setHighlightedPartId(partId);
     setTimeout(() => setHighlightedPartId(null), 2500);
   }, []);
-
-  const handleMigrate = async () => {
-    setMigrating(true);
-    try {
-      const localData = localStorage.getItem('bom-management-system');
-      if (!localData) {
-        setMigrateMsg('没有找到本地数据');
-        return;
-      }
-      const data = JSON.parse(localData);
-      const res = await fetch('/api/migrate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data }),
-      });
-      const result = await res.json();
-      if (result.success) {
-        setMigrated(true);
-        setMigrateMsg(result.message);
-        localStorage.removeItem('bom-management-system');
-        window.location.reload();
-      } else {
-        setMigrateMsg(result.error || '迁移失败');
-      }
-    } catch (err: any) {
-      setMigrateMsg('迁移出错: ' + err.message);
-    } finally {
-      setMigrating(false);
-    }
-  };
 
   const handleGenerateData = () => {
     if (generating) return;
@@ -77,9 +36,7 @@ export default function Home() {
 
     try {
       const sampleData = generateSampleData();
-      // 保存到 localStorage
-      localStorage.setItem('bom-management-system', JSON.stringify(sampleData));
-      // 更新状态
+      // 更新状态（自动持久化到 MySQL）
       dispatch({ type: 'LOAD_STATE', payload: sampleData });
       setGenMsg('✓ 示例数据已生成，共 ' + sampleData.parts.length + ' 个零件、' +
         sampleData.assemblies.length + ' 个组件、' +
@@ -94,13 +51,22 @@ export default function Home() {
   };
 
   const handleExportData = () => {
-    const data = localStorage.getItem('bom-management-system');
-    if (!data) {
+    const data = {
+      parts: state.parts,
+      assemblies: state.assemblies,
+      bomEntries: state.bomEntries,
+      products: state.products,
+      quotes: state.quotes,
+      categories: state.categories,
+      defaultCoefficients: state.defaultCoefficients,
+    };
+    const isEmpty = data.parts.length === 0 && data.assemblies.length === 0 && data.products.length === 0;
+    if (isEmpty) {
       setGenMsg('没有可导出的数据');
       setTimeout(() => setGenMsg(''), 3000);
       return;
     }
-    const blob = new Blob([data], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -123,7 +89,7 @@ export default function Home() {
           setTimeout(() => setGenMsg(''), 3000);
           return;
         }
-        localStorage.setItem('bom-management-system', JSON.stringify(data));
+        // 更新状态（自动持久化到 MySQL）
         dispatch({ type: 'LOAD_STATE', payload: data });
         setGenMsg('✓ 数据已导入，共 ' + data.parts.length + ' 个零件');
         setTimeout(() => setGenMsg(''), 3000);
@@ -244,23 +210,6 @@ export default function Home() {
             </button>
             {genMsg && (
               <span className="text-xs text-emerald-600 font-medium">{genMsg}</span>
-            )}
-            {/* 迁移提示 */}
-            {migrateMsg && !migrated && (
-              <button
-                onClick={handleMigrate}
-                disabled={migrating}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 rounded-md hover:bg-amber-100 transition-colors disabled:opacity-50"
-              >
-                {migrating ? (
-                  <><div className="w-3 h-3 border border-amber-700 border-t-transparent rounded-full animate-spin" /> 迁移中...</>
-                ) : (
-                  <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> 迁移数据到MySQL</>
-                )}
-              </button>
-            )}
-            {migrated && (
-              <span className="text-xs text-emerald-600 font-medium">✓ 已迁移到MySQL</span>
             )}
             <span className="text-xs text-slate-400 font-mono">v1.0</span>
           </div>

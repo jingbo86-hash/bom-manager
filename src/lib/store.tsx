@@ -219,76 +219,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const persistTimer = useRef<NodeJS.Timeout | null>(null);
   const prevStateRef = useRef<AppState>(initialState);
 
-  // 从 MySQL 加载（优先），localStorage 作为兜底
+  // 从 MySQL 加载数据
   useEffect(() => {
     loadAllFromDB()
       .then(data => {
-        const hasData = data.parts.length > 0 || data.assemblies.length > 0 || data.products.length > 0;
-        
-        if (hasData) {
-          // MySQL 有数据，直接使用，并同步到 localStorage 作为备份
-          dispatch({ type: 'LOAD_STATE', payload: data });
-          prevStateRef.current = data;
-          try {
-            localStorage.setItem('bom-management-system', JSON.stringify(data));
-          } catch { /* ignore */ }
-          return;
-        }
-
-        // MySQL 为空，尝试从 localStorage 恢复
-        try {
-          const saved = localStorage.getItem('bom-management-system');
-          if (saved) {
-            const parsed = JSON.parse(saved) as AppState;
-            console.log('MySQL is empty, restoring from localStorage backup');
-            const merged: AppState = {
-              ...initialState,
-              ...parsed,
-              parts: parsed.parts || [],
-              assemblies: parsed.assemblies || [],
-              bomEntries: parsed.bomEntries || [],
-              products: parsed.products || [],
-              quotes: parsed.quotes || [],
-              categories: parsed.categories || [],
-              defaultCoefficients: parsed.defaultCoefficients || initialState.defaultCoefficients,
-            };
-            dispatch({ type: 'LOAD_STATE', payload: merged });
-            prevStateRef.current = merged;
-            return;
-          }
-        } catch { /* ignore */ }
-
-        // 都没有数据，使用空状态
         dispatch({ type: 'LOAD_STATE', payload: data });
         prevStateRef.current = data;
       })
       .catch(err => {
-        console.error('Failed to load from MySQL, falling back to localStorage:', err);
-        // 回退到 localStorage
-        try {
-          const saved = localStorage.getItem('bom-management-system');
-          if (saved) {
-            const parsed = JSON.parse(saved) as AppState;
-            const merged: AppState = {
-              ...initialState,
-              ...parsed,
-              parts: parsed.parts || [],
-              assemblies: parsed.assemblies || [],
-              bomEntries: parsed.bomEntries || [],
-              products: parsed.products || [],
-              quotes: parsed.quotes || [],
-              categories: parsed.categories || [],
-              defaultCoefficients: parsed.defaultCoefficients || initialState.defaultCoefficients,
-            };
-            dispatch({ type: 'LOAD_STATE', payload: merged });
-            prevStateRef.current = merged;
-          }
-        } catch { /* ignore */ }
+        console.error('Failed to load from MySQL:', err);
+        dispatch({ type: 'LOAD_STATE', payload: initialState });
+        prevStateRef.current = initialState;
       })
       .finally(() => setLoading(false));
   }, []);
 
-  // 持久化到 MySQL + localStorage（防抖）
+  // 持久化到 MySQL（防抖）
   useEffect(() => {
     if (loading) return;
     if (state === prevStateRef.current) return;
@@ -296,26 +242,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     if (persistTimer.current) clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(async () => {
-      // 始终保存到 localStorage（浏览器本地，刷新不丢失）
-      try {
-        localStorage.setItem('bom-management-system', JSON.stringify(state));
-      } catch (e) {
-        console.error('Failed to save to localStorage:', e);
-      }
-
       // 同步到 MySQL（服务端持久化）
       try {
-        // 批量同步所有数据到 MySQL
         const { parts, assemblies, bomEntries, products, quotes, categories, defaultCoefficients } = state;
 
-        // 使用 batchCreate 全量覆盖
         await Promise.all([
-          parts.length > 0 ? apiCall('parts', 'batchCreate', parts) : Promise.resolve(),
-          assemblies.length > 0 ? apiCall('assemblies', 'batchCreate', assemblies) : Promise.resolve(),
-          bomEntries.length > 0 ? apiCall('bomEntries', 'batchCreate', bomEntries) : Promise.resolve(),
-          products.length > 0 ? apiCall('products', 'batchCreate', products) : Promise.resolve(),
-          quotes.length > 0 ? apiCall('quotes', 'batchCreate', quotes) : Promise.resolve(),
-          categories.length > 0 ? apiCall('categories', 'batchCreate', categories) : Promise.resolve(),
+          parts.length > 0 ? apiCall('parts', 'batchCreate', parts) : apiCall('parts', 'clearAll', null),
+          assemblies.length > 0 ? apiCall('assemblies', 'batchCreate', assemblies) : apiCall('assemblies', 'clearAll', null),
+          bomEntries.length > 0 ? apiCall('bomEntries', 'batchCreate', bomEntries) : apiCall('bomEntries', 'clearAll', null),
+          products.length > 0 ? apiCall('products', 'batchCreate', products) : apiCall('products', 'clearAll', null),
+          quotes.length > 0 ? apiCall('quotes', 'batchCreate', quotes) : apiCall('quotes', 'clearAll', null),
+          categories.length > 0 ? apiCall('categories', 'batchCreate', categories) : apiCall('categories', 'clearAll', null),
           apiCall('coefficients', 'create', defaultCoefficients),
         ]);
       } catch (err) {

@@ -221,6 +221,15 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ data: rows.map(rowToCamel) });
       }
 
+      // ============ 清空表 ============
+      case 'clearAll': {
+        if (type === 'coefficients') {
+          return NextResponse.json({ success: true });
+        }
+        await query(`DELETE FROM \`${table}\``);
+        return NextResponse.json({ success: true });
+      }
+
       default:
         return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
     }
