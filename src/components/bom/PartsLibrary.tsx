@@ -32,6 +32,7 @@ const PART_IMPORT_COLUMNS = [
   { key: 'supplier', label: '供应商', required: false, sample: 'XX五金' },
   { key: 'remark', label: '备注', required: false, sample: '标准件' },
   { key: 'purchaseLink', label: '采购链接', required: false, sample: 'https://...' },
+  { key: 'categoryId', label: '所属分类', required: false, sample: '电子元器件' },
 ];
 
 const PART_FIELD_MAPPING: Record<string, string> = {
@@ -43,6 +44,7 @@ const PART_FIELD_MAPPING: Record<string, string> = {
   supplier: '厂商',
   remark: '备注',
   purchaseLink: '采购链接',
+  categoryId: '所属分类',
 };
 
 export function PartsLibrary({ onPriceChange }: Props) {
@@ -198,10 +200,25 @@ export function PartsLibrary({ onPriceChange }: Props) {
     const newParts: Part[] = [];
     const updateParts: Part[] = [];
 
+    // 构建分类名称到ID的映射
+    const categoryNameMap = new Map<string, string>();
+    for (const cat of state.categories) {
+      categoryNameMap.set(cat.name, cat.id);
+    }
+
     for (const row of validRows) {
       const price = parseFloat(row.data.price) || 0;
       const quantity = parseFloat(row.data.quantity) || 0;
       const name = row.data.name || '未命名';
+      
+      // 根据导入的分类名称查找对应的分类ID
+      let importCategoryId = '';
+      if (row.data.categoryId) {
+        const catName = row.data.categoryId.trim();
+        if (categoryNameMap.has(catName)) {
+          importCategoryId = categoryNameMap.get(catName)!;
+        }
+      }
       
       // 检查是否已存在同名零件
       const existingPart = state.parts.find(p => p.name === name);
@@ -217,6 +234,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
           supplier: row.data.supplier || existingPart.supplier,
           remark: row.data.remark || existingPart.remark,
           purchaseLink: row.data.purchaseLink || existingPart.purchaseLink,
+          categoryId: importCategoryId || existingPart.categoryId,
           updatedAt: now,
         });
       } else {
@@ -233,12 +251,24 @@ export function PartsLibrary({ onPriceChange }: Props) {
           supplier: row.data.supplier || '',
           remark: row.data.remark || '',
           purchaseLink: row.data.purchaseLink || '',
-          categoryId: selectedCategoryId || '',
+          categoryId: importCategoryId || selectedCategoryId || '',
           createdAt: now,
           updatedAt: now,
         });
       }
     }
+    
+    // 保存导入日志
+    const importLog = {
+      id: generateId(),
+      timestamp: now,
+      totalRows: validRows.length,
+      newCount: newParts.length,
+      updateCount: updateParts.length,
+    };
+    const logs = JSON.parse(localStorage.getItem('import_logs') || '[]');
+    logs.push(importLog);
+    localStorage.setItem('import_logs', JSON.stringify(logs));
 
     // 添加新零件
     for (const part of newParts) {
