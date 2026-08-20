@@ -528,7 +528,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
         <div className="flex-1 flex flex-col min-h-0">
           {/* 固定表头 */}
           <div className="flex-shrink-0 bg-slate-50 border border-b-0 border-slate-200 rounded-t-lg">
-            <div className="flex items-center h-10">
+            <div className="flex items-center h-10 px-2">
               <div className="w-8 flex items-center justify-center flex-shrink-0">
                 <Checkbox
                   checked={filteredParts.length > 0 && selectedPartIds.size === filteredParts.length}
@@ -549,7 +549,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
           </div>
           {/* 滚动数据区 */}
           <div className="flex-1 overflow-y-auto min-h-0 border border-t-0 border-slate-200 rounded-b-lg bg-white">
-            <table className="w-full table-fixed text-sm">
+            <table className="table-fixed text-sm" style={{ minWidth: '1290px' }}>
               <tbody>
                 {paginatedParts.length === 0 ? (
                   <tr>
