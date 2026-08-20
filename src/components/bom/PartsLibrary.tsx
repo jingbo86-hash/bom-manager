@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, Fragment } from 'react';
 import { useAppState } from '@/lib/store';
 import { Part } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,8 @@ export function PartsLibrary({ onPriceChange }: Props) {
   const [selectedPartIds, setSelectedPartIds] = useState<Set<string>>(new Set());
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [batchCategoryId, setBatchCategoryId] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
 
   // 获取目录名称
   const getCategoryName = useCallback((categoryId: string) => {
@@ -93,6 +95,16 @@ export function PartsLibrary({ onPriceChange }: Props) {
       return matchSearch && matchUnit && matchCategory;
     });
   }, [state.parts, search, filterUnit, selectedCategoryIds]);
+
+  const totalPages = Math.ceil(filteredParts.length / pageSize);
+  const paginatedParts = useMemo(() => {
+    return filteredParts.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredParts, currentPage, pageSize]);
+
+  // 筛选条件变化时重置到第1页
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterUnit, selectedCategoryIds]);
 
   const openAdd = () => {
     setEditingPart(null);
@@ -371,7 +383,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredParts.length === 0 ? (
+              {paginatedParts.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={11} className="text-center py-12 text-slate-400">
                     {state.parts.length === 0 ? '暂无零件，点击"添加零件"或"批量导入"开始' : '未找到匹配的零件'}
@@ -440,6 +452,56 @@ export function PartsLibrary({ onPriceChange }: Props) {
           </Table>
           </div>
         </div>
+
+        {/* 分页 */}
+        {filteredParts.length > 0 && (
+          <div className="flex items-center justify-between flex-shrink-0 pt-1">
+            <span className="text-xs text-slate-500">
+              共 {filteredParts.length} 条，每页 {pageSize} 条
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+                .map((p, idx, arr) => (
+                  <Fragment key={p}>
+                    {idx > 0 && arr[idx - 1] !== p - 1 && (
+                      <span className="text-xs text-slate-400 px-1">...</span>
+                    )}
+                    <Button
+                      variant={currentPage === p ? 'default' : 'outline'}
+                      size="sm"
+                      className={`h-8 min-w-[32px] px-2 text-xs ${currentPage === p ? 'bg-blue-600' : ''}`}
+                      onClick={() => setCurrentPage(p)}
+                    >
+                      {p}
+                    </Button>
+                  </Fragment>
+                ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* 添加/编辑对话框 */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
