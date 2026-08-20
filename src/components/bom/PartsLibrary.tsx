@@ -60,7 +60,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [batchCategoryId, setBatchCategoryId] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 20;
+  const [pageSize, setPageSize] = useState(20);
 
   // 获取目录名称
   const getCategoryName = useCallback((categoryId: string) => {
@@ -390,7 +390,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredParts.map(part => (
+                paginatedParts.map(part => (
                   <TableRow key={part.id} className="group">
                     <TableCell className="w-8">
                       <Checkbox
@@ -456,9 +456,21 @@ export function PartsLibrary({ onPriceChange }: Props) {
         {/* 分页 */}
         {filteredParts.length > 0 && (
           <div className="flex items-center justify-between flex-shrink-0 pt-1">
-            <span className="text-xs text-slate-500">
-              共 {filteredParts.length} 条，每页 {pageSize} 条
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">
+                共 {filteredParts.length} 条
+              </span>
+              <Select value={String(pageSize)} onValueChange={v => { setPageSize(Number(v)); setCurrentPage(1); }}>
+                <SelectTrigger className="h-7 w-[80px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="20">20 条/页</SelectItem>
+                  <SelectItem value="50">50 条/页</SelectItem>
+                  <SelectItem value="100">100 条/页</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center gap-1">
               <Button
                 variant="outline"
