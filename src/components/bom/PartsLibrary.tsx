@@ -253,7 +253,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
     <div className="flex gap-4 h-full">
       {/* 左侧目录树 */}
       <div className="w-64 flex-shrink-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100 bg-slate-50/50 flex-shrink-0">
           <span className="text-xs font-semibold text-slate-600">零件目录</span>
           <button
             onClick={() => setCategoryDialogOpen(true)}
@@ -347,11 +347,10 @@ export function PartsLibrary({ onPriceChange }: Props) {
         </div>
 
         {/* 表格 */}
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <div className="overflow-hidden">
+        <div className="bg-white rounded-lg border border-slate-200">
           <Table className="table-fixed">
-            <TableHeader>
-              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+            <TableHeader className="sticky top-0 z-10 bg-white shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1)]">
+              <TableRow className="bg-slate-50 hover:bg-slate-50">
                 <TableHead className="w-8">
                   <Checkbox
                     checked={filteredParts.length > 0 && selectedPartIds.size === filteredParts.length}
@@ -438,7 +437,6 @@ export function PartsLibrary({ onPriceChange }: Props) {
               )}
             </TableBody>
           </Table>
-          </div>
         </div>
 
         {/* 添加/编辑对话框 */}
