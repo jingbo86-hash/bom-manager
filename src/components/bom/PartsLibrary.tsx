@@ -261,6 +261,32 @@ export function PartsLibrary({ onPriceChange }: Props) {
     }
   };
 
+  // 批量导出（导出当前筛选后的零件列表）
+  const handleExportAll = async () => {
+    const XLSX = await import('xlsx');
+    const data = filteredParts.map((p, i) => ({
+      '序号': i + 1,
+      '零件编号': p.code,
+      '零件名称': p.name,
+      '规格型号': p.spec,
+      '单位': p.unit,
+      '单价': p.price,
+      '供应商': p.supplier,
+      '所属目录': state.categories.find(c => c.id === p.categoryId)?.name || '',
+      '备注': p.remark,
+      '采购链接': p.purchaseLink,
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [
+      { wch: 6 }, { wch: 14 }, { wch: 20 }, { wch: 24 },
+      { wch: 6 }, { wch: 10 }, { wch: 16 }, { wch: 14 },
+      { wch: 16 }, { wch: 20 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '零件');
+    XLSX.writeFile(wb, `零件列表_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
   // 导出模板（分类 + 零件）
   const handleExportTemplate = () => {
     import('xlsx').then(XLSX => {
@@ -459,6 +485,17 @@ export function PartsLibrary({ onPriceChange }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             导出模板
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportAll}
+            className="h-9"
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m3 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            批量导出
           </Button>
           <Button
             variant="outline"
