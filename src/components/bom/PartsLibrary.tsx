@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect, Fragment } from 'react';
+import { useState, useMemo, useCallback, useEffect, Fragment, useRef } from 'react';
 import { useAppState } from '@/lib/store';
 import { Part } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -57,6 +57,41 @@ export function PartsLibrary({ onPriceChange }: Props) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [selectedPartIds, setSelectedPartIds] = useState<Set<string>>(new Set());
+  const [colWidths, setColWidths] = useState<Record<string, number>>({
+    checkbox: 32,
+    code: 100,
+    name: 160,
+    spec: 180,
+    unit: 56,
+    price: 70,
+    supplier: 100,
+    category: 90,
+    remark: 100,
+    purchaseLink: 130,
+    action: 96,
+  });
+  const resizing = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
+
+  const handleColResizeMouseDown = useCallback((key: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startWidth = colWidths[key];
+    const onMove = (ev: MouseEvent) => {
+      if (!resizing.current) return;
+      const diff = ev.clientX - resizing.current.startX;
+      const newWidth = Math.max(40, resizing.current.startWidth + diff);
+      setColWidths(prev => ({ ...prev, [key]: newWidth }));
+    };
+    const onUp = () => {
+      resizing.current = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    resizing.current = { key, startX, startWidth };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [colWidths]);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
   const [batchCategoryId, setBatchCategoryId] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -524,101 +559,141 @@ export function PartsLibrary({ onPriceChange }: Props) {
           {selectedPartIds.size > 0 && <span className="text-blue-600 font-medium">已选 {selectedPartIds.size} 项</span>}
         </div>
 
-        {/* 表格 - 表头固定，仅数据行滚动 */}
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* 固定表头 */}
-          <div className="flex-shrink-0 bg-slate-50 border border-b-0 border-slate-200 rounded-t-lg">
-            <div className="flex items-center h-10 px-2">
-              <div className="w-8 flex items-center justify-center flex-shrink-0">
-                <Checkbox
-                  checked={filteredParts.length > 0 && selectedPartIds.size === filteredParts.length}
-                  onCheckedChange={toggleSelectAll}
-                />
-              </div>
-              <div className="w-[100px] px-2 font-semibold text-slate-600 text-sm flex-shrink-0">零件编号</div>
-              <div className="w-[160px] px-2 font-semibold text-slate-600 text-sm flex-shrink-0">名称</div>
-              <div className="w-[180px] px-2 font-semibold text-slate-600 text-sm flex-shrink-0">规格型号</div>
-              <div className="w-14 px-2 font-semibold text-slate-600 text-sm flex-shrink-0">单位</div>
-              <div className="w-[70px] px-2 font-semibold text-slate-600 text-sm text-right flex-shrink-0">单价(元)</div>
-              <div className="w-[100px] px-2 font-semibold text-slate-600 text-sm flex-shrink-0">供应商</div>
-              <div className="w-[90px] px-2 font-semibold text-slate-600 text-sm flex-shrink-0">所属目录</div>
-              <div className="w-[100px] px-2 font-semibold text-slate-600 text-sm flex-shrink-0">备注</div>
-              <div className="w-[130px] px-2 font-semibold text-slate-600 text-sm flex-shrink-0">采购链接</div>
-              <div className="w-24 px-2 font-semibold text-slate-600 text-sm text-right flex-shrink-0">操作</div>
-            </div>
-          </div>
-          {/* 滚动数据区 */}
-          <div className="flex-1 overflow-y-auto min-h-0 border border-t-0 border-slate-200 rounded-b-lg bg-white">
-            <table className="table-fixed text-sm overflow-hidden" style={{ minWidth: '1290px' }}>
-              <tbody>
-                {paginatedParts.length === 0 ? (
-                  <tr>
-                    <td colSpan={11} className="text-center py-12 text-slate-400">
-                      {state.parts.length === 0 ? '暂无零件，点击"添加零件"或"批量导入"开始' : '未找到匹配的零件'}
+        {/* 表格 - 单表结构，表头 sticky 固定，列宽可拖拽 */}
+        <div className="flex-1 overflow-y-auto min-h-0 border border-slate-200 rounded-lg bg-white">
+          <table className="table-fixed w-full text-sm" style={{ borderCollapse: 'separate' }}>
+            <colgroup>
+              <col style={{ width: colWidths.checkbox }} />
+              <col style={{ width: colWidths.code }} />
+              <col style={{ width: colWidths.name }} />
+              <col style={{ width: colWidths.spec }} />
+              <col style={{ width: colWidths.unit }} />
+              <col style={{ width: colWidths.price }} />
+              <col style={{ width: colWidths.supplier }} />
+              <col style={{ width: colWidths.category }} />
+              <col style={{ width: colWidths.remark }} />
+              <col style={{ width: colWidths.purchaseLink }} />
+              <col style={{ width: colWidths.action }} />
+            </colgroup>
+            <thead>
+              <tr className="bg-slate-50">
+                <th className="sticky top-0 z-10 bg-slate-50 h-10 px-2 text-left align-middle font-semibold text-slate-600 text-sm" style={{ width: colWidths.checkbox, position: 'sticky', top: 0, zIndex: 10 }}>
+                  <Checkbox
+                    checked={filteredParts.length > 0 && selectedPartIds.size === filteredParts.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors" onMouseDown={e => handleColResizeMouseDown('checkbox', e)} />
+                </th>
+                <th className="sticky top-0 z-10 bg-slate-50 h-10 px-2 text-left align-middle font-semibold text-slate-600 text-sm" style={{ width: colWidths.code, position: 'sticky', top: 0, zIndex: 10 }}>
+                  零件编号
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors" onMouseDown={e => handleColResizeMouseDown('code', e)} />
+                </th>
+                <th className="sticky top-0 z-10 bg-slate-50 h-10 px-2 text-left align-middle font-semibold text-slate-600 text-sm" style={{ width: colWidths.name, position: 'sticky', top: 0, zIndex: 10 }}>
+                  名称
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors" onMouseDown={e => handleColResizeMouseDown('name', e)} />
+                </th>
+                <th className="sticky top-0 z-10 bg-slate-50 h-10 px-2 text-left align-middle font-semibold text-slate-600 text-sm" style={{ width: colWidths.spec, position: 'sticky', top: 0, zIndex: 10 }}>
+                  规格型号
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors" onMouseDown={e => handleColResizeMouseDown('spec', e)} />
+                </th>
+                <th className="sticky top-0 z-10 bg-slate-50 h-10 px-2 text-left align-middle font-semibold text-slate-600 text-sm" style={{ width: colWidths.unit, position: 'sticky', top: 0, zIndex: 10 }}>
+                  单位
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors" onMouseDown={e => handleColResizeMouseDown('unit', e)} />
+                </th>
+                <th className="sticky top-0 z-10 bg-slate-50 h-10 px-2 text-right align-middle font-semibold text-slate-600 text-sm" style={{ width: colWidths.price, position: 'sticky', top: 0, zIndex: 10 }}>
+                  单价(元)
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors" onMouseDown={e => handleColResizeMouseDown('price', e)} />
+                </th>
+                <th className="sticky top-0 z-10 bg-slate-50 h-10 px-2 text-left align-middle font-semibold text-slate-600 text-sm" style={{ width: colWidths.supplier, position: 'sticky', top: 0, zIndex: 10 }}>
+                  供应商
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors" onMouseDown={e => handleColResizeMouseDown('supplier', e)} />
+                </th>
+                <th className="sticky top-0 z-10 bg-slate-50 h-10 px-2 text-left align-middle font-semibold text-slate-600 text-sm" style={{ width: colWidths.category, position: 'sticky', top: 0, zIndex: 10 }}>
+                  所属目录
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors" onMouseDown={e => handleColResizeMouseDown('category', e)} />
+                </th>
+                <th className="sticky top-0 z-10 bg-slate-50 h-10 px-2 text-left align-middle font-semibold text-slate-600 text-sm" style={{ width: colWidths.remark, position: 'sticky', top: 0, zIndex: 10 }}>
+                  备注
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors" onMouseDown={e => handleColResizeMouseDown('remark', e)} />
+                </th>
+                <th className="sticky top-0 z-10 bg-slate-50 h-10 px-2 text-left align-middle font-semibold text-slate-600 text-sm" style={{ width: colWidths.purchaseLink, position: 'sticky', top: 0, zIndex: 10 }}>
+                  采购链接
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors" onMouseDown={e => handleColResizeMouseDown('purchaseLink', e)} />
+                </th>
+                <th className="sticky top-0 z-10 bg-slate-50 h-10 px-2 text-right align-middle font-semibold text-slate-600 text-sm" style={{ width: colWidths.action, position: 'sticky', top: 0, zIndex: 10 }}>
+                  操作
+                  <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 active:bg-blue-500 transition-colors" onMouseDown={e => handleColResizeMouseDown('action', e)} />
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedParts.length === 0 ? (
+                <tr>
+                  <td colSpan={11} className="text-center py-12 text-slate-400">
+                    {state.parts.length === 0 ? '暂无零件，点击"添加零件"或"批量导入"开始' : '未找到匹配的零件'}
+                  </td>
+                </tr>
+              ) : (
+                paginatedParts.map(part => (
+                  <tr key={part.id} className="group border-b hover:bg-slate-50/50 transition-colors">
+                    <td className="p-2 align-middle" style={{ width: colWidths.checkbox }}>
+                      <Checkbox
+                        checked={selectedPartIds.has(part.id)}
+                        onCheckedChange={() => toggleSelectPart(part.id)}
+                      />
+                    </td>
+                    <td className="p-2 align-middle font-mono text-xs text-blue-600 font-medium truncate" style={{ width: colWidths.code }} title={part.code}>{part.code}</td>
+                    <td className="p-2 align-middle font-medium truncate" style={{ width: colWidths.name }} title={part.name}>{part.name}</td>
+                    <td className="p-2 align-middle text-slate-500 text-sm truncate" style={{ width: colWidths.spec }} title={part.spec}>{part.spec}</td>
+                    <td className="p-2 align-middle text-slate-500 text-sm truncate" style={{ width: colWidths.unit }} title={part.unit}>{part.unit}</td>
+                    <td className="p-2 align-middle text-right font-mono text-sm font-medium text-amber-600 truncate" style={{ width: colWidths.price }}>
+                      {Number(part.price).toFixed(2)}
+                    </td>
+                    <td className="p-2 align-middle text-slate-500 text-sm truncate" style={{ width: colWidths.supplier }} title={part.supplier}>{part.supplier || '-'}</td>
+                    <td className="p-2 align-middle text-slate-500 text-sm truncate" style={{ width: colWidths.category }}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium truncate max-w-full ${
+                        part.categoryId
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'bg-slate-50 text-slate-400'
+                      }`} title={getCategoryName(part.categoryId)}>
+                        {getCategoryName(part.categoryId)}
+                      </span>
+                    </td>
+                    <td className="p-2 align-middle text-slate-400 text-sm truncate" style={{ width: colWidths.remark }} title={part.remark}>{part.remark || '-'}</td>
+                    <td className="p-2 align-middle text-slate-400 text-sm truncate" style={{ width: colWidths.purchaseLink }}>
+                      {part.purchaseLink ? (
+                        <a href={part.purchaseLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate block" title={part.purchaseLink}>
+                          {part.purchaseLink}
+                        </a>
+                      ) : '-'}
+                    </td>
+                    <td className="p-2 align-middle text-right" style={{ width: colWidths.action }}>
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openEdit(part)}
+                          className="p-1.5 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
+                          title="编辑"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(part.id)}
+                          className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
+                          title="删除"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ) : (
-                  paginatedParts.map(part => (
-                    <tr key={part.id} className="group border-b hover:bg-slate-50/50 transition-colors">
-                      <td className="w-8 p-2 align-middle">
-                        <Checkbox
-                          checked={selectedPartIds.has(part.id)}
-                          onCheckedChange={() => toggleSelectPart(part.id)}
-                        />
-                      </td>
-                      <td className="w-[100px] p-2 align-middle font-mono text-xs text-blue-600 font-medium truncate" title={part.code}>{part.code}</td>
-                      <td className="w-[160px] p-2 align-middle font-medium truncate" title={part.name}>{part.name}</td>
-                      <td className="w-[180px] p-2 align-middle text-slate-500 text-sm truncate" title={part.spec}>{part.spec}</td>
-                      <td className="w-14 p-2 align-middle text-slate-500 text-sm truncate" title={part.unit}>{part.unit}</td>
-                      <td className="w-[70px] p-2 align-middle text-right font-mono text-sm font-medium text-amber-600 truncate">
-                        {Number(part.price).toFixed(2)}
-                      </td>
-                      <td className="w-[100px] p-2 align-middle text-slate-500 text-sm truncate" title={part.supplier}>{part.supplier || '-'}</td>
-                      <td className="w-[90px] p-2 align-middle text-slate-500 text-sm truncate">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium truncate max-w-full ${
-                          part.categoryId
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'bg-slate-50 text-slate-400'
-                        }`} title={getCategoryName(part.categoryId)}>
-                          {getCategoryName(part.categoryId)}
-                        </span>
-                      </td>
-                      <td className="w-[100px] p-2 align-middle text-slate-400 text-sm truncate" title={part.remark}>{part.remark || '-'}</td>
-                      <td className="w-[130px] p-2 align-middle text-slate-400 text-sm truncate">
-                        {part.purchaseLink ? (
-                          <a href={part.purchaseLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate block" title={part.purchaseLink}>
-                            {part.purchaseLink}
-                          </a>
-                        ) : '-'}
-                      </td>
-                      <td className="w-24 p-2 align-middle text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => openEdit(part)}
-                            className="p-1.5 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
-                            title="编辑"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirm(part.id)}
-                            className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
-                            title="删除"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
         {/* 分页 */}
