@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { PageKey } from '@/lib/types';
 import { useAppState } from '@/lib/store';
 import { PartsLibrary } from '@/components/bom/PartsLibrary';
@@ -24,6 +24,7 @@ export default function Home() {
   const [migrateMsg, setMigrateMsg] = useState('');
   const [generating, setGenerating] = useState(false);
   const [genMsg, setGenMsg] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { state, loading, dispatch } = useAppState();
 
   // 检查是否有 localStorage 数据需要迁移
@@ -90,6 +91,50 @@ export default function Home() {
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleExportData = () => {
+    const data = localStorage.getItem('bom-management-system');
+    if (!data) {
+      setGenMsg('没有可导出的数据');
+      setTimeout(() => setGenMsg(''), 3000);
+      return;
+    }
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bom-data-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setGenMsg('✓ 数据已导出');
+    setTimeout(() => setGenMsg(''), 3000);
+  };
+
+  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        if (!data.parts || !data.assemblies) {
+          setGenMsg('文件格式错误，不是有效的BOM数据文件');
+          setTimeout(() => setGenMsg(''), 3000);
+          return;
+        }
+        localStorage.setItem('bom-management-system', JSON.stringify(data));
+        dispatch({ type: 'LOAD_STATE', payload: data });
+        setGenMsg('✓ 数据已导入，共 ' + data.parts.length + ' 个零件');
+        setTimeout(() => setGenMsg(''), 3000);
+      } catch {
+        setGenMsg('文件解析失败，请检查文件格式');
+        setTimeout(() => setGenMsg(''), 3000);
+      }
+    };
+    reader.readAsText(file);
+    // 重置 input 以便重复选择同一文件
+    e.target.value = '';
   };
 
   const renderPage = () => {
@@ -162,6 +207,29 @@ export default function Home() {
             {NAV_ITEMS.find(n => n.key === activePage)?.label}
           </h1>
           <div className="flex items-center gap-3">
+            {/* 导出数据 */}
+            <button
+              onClick={handleExportData}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white text-slate-700 border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5 5 5-5M12 4v12" /></svg>
+              导出数据
+            </button>
+            {/* 导入数据 */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportData}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white text-slate-700 border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 11l5-5 5 5M12 4v12" /></svg>
+              导入数据
+            </button>
             {/* 生成示例数据 */}
             <button
               onClick={handleGenerateData}
