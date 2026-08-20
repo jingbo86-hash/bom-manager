@@ -30,9 +30,9 @@ const PART_IMPORT_COLUMNS = [
   { key: 'price', label: '单价', required: true, sample: '0.50' },
   { key: 'quantity', label: '数量', required: false, sample: '100' },
   { key: 'supplier', label: '供应商', required: false, sample: 'XX五金' },
+  { key: 'categoryId', label: '所属分类', required: false, sample: '电子元器件' },
   { key: 'remark', label: '备注', required: false, sample: '标准件' },
   { key: 'purchaseLink', label: '采购链接', required: false, sample: 'https://...' },
-  { key: 'categoryId', label: '所属分类', required: false, sample: '电子元器件' },
 ];
 
 const PART_FIELD_MAPPING: Record<string, string> = {
