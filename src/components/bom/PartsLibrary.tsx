@@ -1053,6 +1053,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
           templateFileName="零件导入模板.xlsx"
           columns={PART_IMPORT_COLUMNS}
           fieldMapping={PART_FIELD_MAPPING}
+          categories={state.categories}
           onImport={handleBatchImport}
         />
 

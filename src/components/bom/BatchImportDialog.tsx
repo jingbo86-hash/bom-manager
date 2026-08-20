@@ -43,6 +43,8 @@ interface Props {
   columns: ImportColumn[];
   /** 字段映射：将导入的列名映射到标准字段名 */
   fieldMapping?: Record<string, string>;
+  /** 分类列表，用于所属分类列的下拉选择 */
+  categories?: Array<{ id: string; name: string }>;
   onImport: (rows: ImportRow[]) => Promise<void>;
 }
 
@@ -54,11 +56,13 @@ export function BatchImportDialog({
   templateFileName,
   columns,
   fieldMapping,
+  categories = [],
   onImport,
 }: Props) {
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingCell, setEditingCell] = useState<{ rowIdx: number; colKey: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /** 下载模板 */
@@ -283,7 +287,55 @@ export function BatchImportDialog({
                           }`}
                           title={row.data[col.key]}
                         >
-                          {row.data[col.key] || '-'}
+                          {editingCell?.rowIdx === row.index && editingCell?.colKey === col.key ? (
+                            col.key === 'categoryId' ? (
+                              <select
+                                className="w-full h-7 text-xs border rounded px-1 bg-white"
+                                value={row.data[col.key] || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setRows(prev => prev.map(r =>
+                                    r.index === row.index
+                                      ? { ...r, data: { ...r.data, [col.key]: val } }
+                                      : r
+                                  ));
+                                  setEditingCell(null);
+                                }}
+                                onBlur={() => setEditingCell(null)}
+                                autoFocus
+                              >
+                                <option value="">未分类</option>
+                                {categories.map(c => (
+                                  <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                className="w-full h-7 text-xs border rounded px-1"
+                                value={row.data[col.key] || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setRows(prev => prev.map(r =>
+                                    r.index === row.index
+                                      ? { ...r, data: { ...r.data, [col.key]: val } }
+                                      : r
+                                  ));
+                                }}
+                                onBlur={() => setEditingCell(null)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') setEditingCell(null); }}
+                                autoFocus
+                              />
+                            )
+                          ) : (
+                            <span
+                              className="cursor-pointer hover:bg-blue-50 rounded px-1 -mx-1 block"
+                              onClick={() => setEditingCell({ rowIdx: row.index, colKey: col.key })}
+                            >
+                              {col.key === 'categoryId'
+                                ? (categories.find(c => c.id === row.data[col.key])?.name || row.data[col.key] || '未分类')
+                                : (row.data[col.key] || '-')}
+                            </span>
+                          )}
                         </TableCell>
                       ))}
                       {errorCount > 0 && (
