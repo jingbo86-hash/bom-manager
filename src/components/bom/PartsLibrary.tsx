@@ -650,14 +650,24 @@ export function PartsLibrary({ onPriceChange }: Props) {
                       {Number(part.price).toFixed(2)}
                     </td>
                     <td className="p-2 align-middle text-slate-500 text-sm truncate" style={{ width: colWidths.supplier }} title={part.supplier}>{part.supplier || '-'}</td>
-                    <td className="p-2 align-middle text-slate-500 text-sm truncate" style={{ width: colWidths.category }}>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium truncate max-w-full ${
-                        part.categoryId
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'bg-slate-50 text-slate-400'
-                      }`} title={getCategoryName(part.categoryId)}>
-                        {getCategoryName(part.categoryId)}
-                      </span>
+                    <td className="p-2 align-middle" style={{ width: colWidths.category }}>
+                      <Select
+                        value={part.categoryId || 'none'}
+                        onValueChange={val => {
+                          const newCategoryId = val === 'none' ? '' : val;
+                          dispatch({ type: 'UPDATE_PART', payload: { ...part, categoryId: newCategoryId, updatedAt: Date.now() } });
+                        }}
+                      >
+                        <SelectTrigger className={`h-6 text-xs border-0 shadow-none p-0 focus:ring-0 hover:bg-slate-100 rounded ${part.categoryId ? 'bg-blue-50 text-blue-700' : 'bg-slate-50 text-slate-400'}`}>
+                          <SelectValue>{getCategoryName(part.categoryId)}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none" className="text-xs">未分类</SelectItem>
+                          {state.categories.map(cat => (
+                            <SelectItem key={cat.id} value={cat.id} className="text-xs">{cat.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </td>
                     <td className="p-2 align-middle text-slate-400 text-sm truncate" style={{ width: colWidths.remark }} title={part.remark}>{part.remark || '-'}</td>
                     <td className="p-2 align-middle text-slate-400 text-sm truncate" style={{ width: colWidths.purchaseLink }}>
