@@ -362,24 +362,24 @@ export function PartsLibrary({ onPriceChange }: Props) {
         <div className="flex-1 overflow-y-auto min-h-0">
           <div className="bg-white rounded-lg border border-slate-200">
           <Table className="table-fixed">
-            <TableHeader className="sticky top-0 z-10 bg-white shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1)]">
+            <TableHeader>
               <TableRow className="bg-slate-50 hover:bg-slate-50">
-                <TableHead className="w-8">
+                <TableHead className="w-8 sticky top-0 z-10 bg-slate-50 after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-slate-200">
                   <Checkbox
                     checked={filteredParts.length > 0 && selectedPartIds.size === filteredParts.length}
                     onCheckedChange={toggleSelectAll}
                   />
                 </TableHead>
-                <TableHead className="font-semibold text-slate-600 w-[100px]">零件编号</TableHead>
-                <TableHead className="font-semibold text-slate-600 w-[160px]">名称</TableHead>
-                <TableHead className="font-semibold text-slate-600 w-[180px]">规格型号</TableHead>
-                <TableHead className="font-semibold text-slate-600 w-14">单位</TableHead>
-                <TableHead className="font-semibold text-slate-600 text-right w-[70px]">单价(元)</TableHead>
-                <TableHead className="font-semibold text-slate-600 w-[100px]">供应商</TableHead>
-                <TableHead className="font-semibold text-slate-600 w-[90px]">所属目录</TableHead>
-                <TableHead className="font-semibold text-slate-600 w-[100px]">备注</TableHead>
-                <TableHead className="font-semibold text-slate-600 w-[130px]">采购链接</TableHead>
-                <TableHead className="w-24 text-right">操作</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[100px] sticky top-0 z-10 bg-slate-50 after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-slate-200">零件编号</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[160px] sticky top-0 z-10 bg-slate-50 after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-slate-200">名称</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[180px] sticky top-0 z-10 bg-slate-50 after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-slate-200">规格型号</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-14 sticky top-0 z-10 bg-slate-50 after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-slate-200">单位</TableHead>
+                <TableHead className="font-semibold text-slate-600 text-right w-[70px] sticky top-0 z-10 bg-slate-50 after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-slate-200">单价(元)</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[100px] sticky top-0 z-10 bg-slate-50 after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-slate-200">供应商</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[90px] sticky top-0 z-10 bg-slate-50 after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-slate-200">所属目录</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[100px] sticky top-0 z-10 bg-slate-50 after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-slate-200">备注</TableHead>
+                <TableHead className="font-semibold text-slate-600 w-[130px] sticky top-0 z-10 bg-slate-50 after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-slate-200">采购链接</TableHead>
+                <TableHead className="w-24 text-right sticky top-0 z-10 bg-slate-50 after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-slate-200">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
