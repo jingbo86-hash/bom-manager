@@ -261,6 +261,113 @@ export function PartsLibrary({ onPriceChange }: Props) {
     }
   };
 
+  // 导出模板（分类 + 零件）
+  const handleExportTemplate = () => {
+    import('xlsx').then(XLSX => {
+      const wb = XLSX.utils.book_new();
+
+      // 分类表
+      const catRows = state.categories.map(c => ({
+        '分类编号': c.id,
+        '分类名称': c.name,
+        '上级分类编号': c.parentId || '',
+      }));
+      const catSheet = XLSX.utils.json_to_sheet(catRows);
+      XLSX.utils.book_append_sheet(wb, catSheet, '分类目录');
+
+      // 零件表
+      const partRows = state.parts.map(p => ({
+        '零件编号': p.code,
+        '零件名称': p.name,
+        '规格型号': p.spec,
+        '单位': p.unit,
+        '单价': p.price,
+        '供应商': p.supplier,
+        '所属分类编号': p.categoryId || '',
+        '备注': p.remark || '',
+        '采购链接': p.purchaseLink || '',
+      }));
+      const partSheet = XLSX.utils.json_to_sheet(partRows);
+      XLSX.utils.book_append_sheet(wb, partSheet, '零件');
+
+      XLSX.writeFile(wb, '零件模板.xlsx');
+    });
+  };
+
+  // 导入模板（覆盖模式）
+  const handleImportTemplate = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx,.xls';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const buf = await file.arrayBuffer();
+      const XLSX = await import('xlsx');
+      const wb = XLSX.read(buf);
+
+      let newCategories: typeof state.categories = [];
+      let newParts: typeof state.parts = [];
+
+      // 读取分类目录表
+      const catSheet = wb.Sheets['分类目录'];
+      if (catSheet) {
+        const catData = XLSX.utils.sheet_to_json<Record<string, string>>(catSheet);
+        const now = Date.now();
+        newCategories = catData.map((row, i) => ({
+          id: row['分类编号'] || `import-cat-${i}-${now}`,
+          name: row['分类名称'] || '未命名分类',
+          parentId: row['上级分类编号'] || null,
+          createdAt: now,
+          updatedAt: now,
+        }));
+      }
+
+      // 读取零件表
+      const partSheet = wb.Sheets['零件'];
+      if (partSheet) {
+        const partData = XLSX.utils.sheet_to_json<Record<string, string>>(partSheet);
+        const now = Date.now();
+        const existingCodes = new Set(state.parts.map(p => p.code));
+        newParts = partData.map((row, i) => {
+          const code = row['零件编号'] || `IMP-${String(i + 1).padStart(4, '0')}`;
+          // 如果编号已存在，加后缀避免冲突
+          const finalCode = existingCodes.has(code) && !state.parts.find(p => p.code === code)?.name
+            ? `${code}-${now}`
+            : code;
+          existingCodes.add(finalCode);
+          return {
+            id: `import-${i}-${now}`,
+            code: finalCode,
+            name: row['零件名称'] || '未命名',
+            spec: row['规格型号'] || '',
+            unit: row['单位'] || '个',
+            price: parseFloat(row['单价']) || 0,
+            quantity: 0,
+            supplier: row['供应商'] || '',
+            categoryId: row['所属分类编号'] || '',
+            remark: row['备注'] || '',
+            purchaseLink: row['采购链接'] || '',
+            createdAt: now,
+            updatedAt: now,
+          };
+        });
+      }
+
+      // 直接覆盖全部数据
+      dispatch({
+        type: 'LOAD_STATE',
+        payload: {
+          ...state,
+          categories: newCategories,
+          parts: newParts,
+        },
+      });
+    };
+    input.click();
+  };
+
   return (
     <div className="flex gap-4 h-full overflow-hidden">
       {/* 左侧目录树 */}
@@ -341,6 +448,28 @@ export function PartsLibrary({ onPriceChange }: Props) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
             </svg>
             批量导入
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportTemplate}
+            className="h-9"
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            导出模板
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleImportTemplate}
+            className="h-9"
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            导入模板
           </Button>
           <Button onClick={openAdd} size="sm" className="bg-blue-600 hover:bg-blue-700">
             <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
