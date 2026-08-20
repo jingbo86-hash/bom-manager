@@ -298,90 +298,118 @@ export function PartsLibrary({ onPriceChange }: Props) {
 
   // 批量导出（导出当前筛选后的零件列表）
   const handleExportAll = async () => {
-    const XLSX = await import('xlsx');
-    const data = filteredParts.map((p, i) => ({
-      '序号': i + 1,
-      '零件编号': p.code,
-      '零件名称': p.name,
-      '规格型号': p.spec,
-      '单位': p.unit,
-      '单价': p.price,
-      '供应商': p.supplier,
-      '所属目录': state.categories.find(c => c.id === p.categoryId)?.name || '',
-      '备注': p.remark,
-      '采购链接': p.purchaseLink,
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    ws['!cols'] = [
-      { wch: 6 }, { wch: 14 }, { wch: 20 }, { wch: 24 },
-      { wch: 6 }, { wch: 10 }, { wch: 16 }, { wch: 14 },
-      { wch: 16 }, { wch: 20 },
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '零件');
+    const ExcelJS = await import('exceljs');
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('零件');
 
-    // 添加所属目录下拉验证
+    // 表头
+    ws.columns = [
+      { header: '序号', width: 6 },
+      { header: '零件编号', width: 14 },
+      { header: '零件名称', width: 20 },
+      { header: '规格型号', width: 24 },
+      { header: '单位', width: 6 },
+      { header: '单价', width: 10 },
+      { header: '供应商', width: 16 },
+      { header: '所属目录', width: 14 },
+      { header: '备注', width: 16 },
+      { header: '采购链接', width: 20 },
+    ];
+
+    // 数据行
+    filteredParts.forEach((p, i) => {
+      ws.addRow([
+        i + 1, p.code, p.name, p.spec, p.unit, p.price,
+        p.supplier,
+        state.categories.find(c => c.id === p.categoryId)?.name || '',
+        p.remark, p.purchaseLink,
+      ]);
+    });
+
+    // 所属目录下拉验证
     const catNames = state.categories.map(c => c.name).filter(Boolean);
     if (catNames.length > 0) {
-      // 创建分类辅助表
-      const catSheet = XLSX.utils.aoa_to_sheet([['所属目录'], ...catNames.map(n => [n])]);
-      XLSX.utils.book_append_sheet(wb, catSheet, '分类列表');
-      ws['!dataValidations'] = {
-        validations: [{
-          type: 'list',
-          formula1: "'分类列表'!$A$2:$A$" + (catNames.length + 1),
-          cellRange: 'H2:H' + (data.length + 1),
-          allowBlank: true,
-        }]
-      };
+      const col = ws.getColumn(8);
+      col.eachCell({ includeEmpty: false }, (cell, rowNumber) => {
+        if (rowNumber > 1) {
+          cell.dataValidation = {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`"${catNames.join(',')}"`],
+          };
+        }
+      });
     }
 
-    XLSX.writeFile(wb, `零件列表_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `零件列表_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // 导出模板（分类 + 零件）
-  const handleExportTemplate = () => {
-    import('xlsx').then(XLSX => {
-      const wb = XLSX.utils.book_new();
+  const handleExportTemplate = async () => {
+    const ExcelJS = await import('exceljs');
+    const wb = new ExcelJS.Workbook();
 
-      // 分类表
-      const catRows = state.categories.map(c => ({
-        '分类编号': c.id,
-        '分类名称': c.name,
-        '上级分类编号': c.parentId || '',
-      }));
-      const catSheet = XLSX.utils.json_to_sheet(catRows);
-      XLSX.utils.book_append_sheet(wb, catSheet, '分类目录');
-
-      // 零件表
-      const partRows = state.parts.map(p => ({
-        '零件编号': p.code,
-        '零件名称': p.name,
-        '规格型号': p.spec,
-        '单位': p.unit,
-        '单价': p.price,
-        '供应商': p.supplier,
-        '所属分类编号': p.categoryId || '',
-        '备注': p.remark || '',
-        '采购链接': p.purchaseLink || '',
-      }));
-      const partSheet = XLSX.utils.json_to_sheet(partRows);
-      XLSX.utils.book_append_sheet(wb, partSheet, '零件');
-
-      // 所属分类编号下拉验证（引用分类目录表的分类编号列）
-      if (catRows.length > 0) {
-        partSheet['!dataValidations'] = {
-          validations: [{
-            type: 'list',
-            formula1: "'分类目录'!$A$2:$A$" + (catRows.length + 1),
-            cellRange: 'G2:G' + (partRows.length + 1),
-            allowBlank: true,
-          }]
-        };
-      }
-
-      XLSX.writeFile(wb, '零件模板.xlsx');
+    // 分类表
+    const catWs = wb.addWorksheet('分类目录');
+    catWs.columns = [
+      { header: '分类编号', width: 36 },
+      { header: '分类名称', width: 20 },
+      { header: '上级分类编号', width: 36 },
+    ];
+    state.categories.forEach(c => {
+      catWs.addRow([c.id, c.name, c.parentId || '']);
     });
+
+    // 零件表
+    const partWs = wb.addWorksheet('零件');
+    partWs.columns = [
+      { header: '零件编号', width: 14 },
+      { header: '零件名称', width: 20 },
+      { header: '规格型号', width: 24 },
+      { header: '单位', width: 6 },
+      { header: '单价', width: 10 },
+      { header: '供应商', width: 16 },
+      { header: '所属分类编号', width: 36 },
+      { header: '备注', width: 16 },
+      { header: '采购链接', width: 20 },
+    ];
+    state.parts.forEach(p => {
+      partWs.addRow([
+        p.code, p.name, p.spec, p.unit, p.price,
+        p.supplier, p.categoryId || '', p.remark || '', p.purchaseLink || '',
+      ]);
+    });
+
+    // 所属分类编号下拉验证
+    const catIds = state.categories.map(c => c.id).filter(Boolean);
+    if (catIds.length > 0) {
+      const col = partWs.getColumn(7);
+      col.eachCell({ includeEmpty: false }, (cell, rowNumber) => {
+        if (rowNumber > 1) {
+          cell.dataValidation = {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`"${catIds.join(',')}"`],
+          };
+        }
+      });
+    }
+
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '零件模板.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // 导入模板（覆盖模式）
