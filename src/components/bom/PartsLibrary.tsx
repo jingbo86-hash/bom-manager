@@ -323,17 +323,17 @@ export function PartsLibrary({ onPriceChange }: Props) {
     // 添加所属目录下拉验证
     const catNames = state.categories.map(c => c.name).filter(Boolean);
     if (catNames.length > 0) {
-      // 创建隐藏的分类辅助表
+      // 创建分类辅助表
       const catSheet = XLSX.utils.aoa_to_sheet([['所属目录'], ...catNames.map(n => [n])]);
-      XLSX.utils.book_append_sheet(wb, catSheet, '_分类列表');
-      // 隐藏辅助表（部分软件支持）
-      if (catSheet['!cols']) catSheet['!cols'] = [{ wch: 20 }];
-      ws['!dataValidations'] = [{
-        type: 'list',
-        formula1: '=_分类列表!$A$2:$A$' + (catNames.length + 1),
-        ranges: [`H2:H${data.length + 1}`],
-        allowBlank: true,
-      }];
+      XLSX.utils.book_append_sheet(wb, catSheet, '分类列表');
+      ws['!dataValidations'] = {
+        validations: [{
+          type: 'list',
+          formula1: "'分类列表'!$A$2:$A$" + (catNames.length + 1),
+          cellRange: 'H2:H' + (data.length + 1),
+          allowBlank: true,
+        }]
+      };
     }
 
     XLSX.writeFile(wb, `零件列表_${new Date().toISOString().slice(0, 10)}.xlsx`);
@@ -370,12 +370,14 @@ export function PartsLibrary({ onPriceChange }: Props) {
 
       // 所属分类编号下拉验证（引用分类目录表的分类编号列）
       if (catRows.length > 0) {
-        partSheet['!dataValidations'] = [{
-          type: 'list',
-          formula1: '=分类目录!$A$2:$A$' + (catRows.length + 1),
-          ranges: [`G2:G${partRows.length + 1}`],
-          allowBlank: true,
-        }];
+        partSheet['!dataValidations'] = {
+          validations: [{
+            type: 'list',
+            formula1: "'分类目录'!$A$2:$A$" + (catRows.length + 1),
+            cellRange: 'G2:G' + (partRows.length + 1),
+            allowBlank: true,
+          }]
+        };
       }
 
       XLSX.writeFile(wb, '零件模板.xlsx');
