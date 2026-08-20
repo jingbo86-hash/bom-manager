@@ -250,7 +250,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
   };
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex gap-4 h-full overflow-hidden">
       {/* 左侧目录树 */}
       <div className="w-64 flex-shrink-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100 bg-slate-50/50 flex-shrink-0">
@@ -276,9 +276,9 @@ export function PartsLibrary({ onPriceChange }: Props) {
       </div>
 
       {/* 右侧零件列表 */}
-      <div className="flex-1 min-w-0 space-y-4">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* 工具栏 */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap flex-shrink-0">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -339,7 +339,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
         </div>
 
         {/* 统计 */}
-        <div className="flex gap-4 text-xs text-slate-500">
+        <div className="flex gap-4 text-xs text-slate-500 flex-shrink-0">
           <span>共 {state.parts.length} 个零件</span>
           {selectedCategoryId && <span>当前目录: {state.categories.find(c => c.id === selectedCategoryId)?.name || '未分类'}</span>}
           {search && <span>筛选结果: {filteredParts.length} 个</span>}
@@ -347,7 +347,8 @@ export function PartsLibrary({ onPriceChange }: Props) {
         </div>
 
         {/* 表格 */}
-        <div className="bg-white rounded-lg border border-slate-200">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="bg-white rounded-lg border border-slate-200">
           <Table className="table-fixed">
             <TableHeader className="sticky top-0 z-10 bg-white shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1)]">
               <TableRow className="bg-slate-50 hover:bg-slate-50">
@@ -437,6 +438,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
 
         {/* 添加/编辑对话框 */}
