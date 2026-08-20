@@ -549,7 +549,7 @@ export function PartsLibrary({ onPriceChange }: Props) {
           </div>
           {/* 滚动数据区 */}
           <div className="flex-1 overflow-y-auto min-h-0 border border-t-0 border-slate-200 rounded-b-lg bg-white">
-            <table className="table-fixed text-sm" style={{ minWidth: '1290px' }}>
+            <table className="table-fixed text-sm overflow-hidden" style={{ minWidth: '1290px' }}>
               <tbody>
                 {paginatedParts.length === 0 ? (
                   <tr>
@@ -566,11 +566,11 @@ export function PartsLibrary({ onPriceChange }: Props) {
                           onCheckedChange={() => toggleSelectPart(part.id)}
                         />
                       </td>
-                      <td className="w-[100px] p-2 align-middle font-mono text-xs text-blue-600 font-medium truncate">{part.code}</td>
+                      <td className="w-[100px] p-2 align-middle font-mono text-xs text-blue-600 font-medium truncate" title={part.code}>{part.code}</td>
                       <td className="w-[160px] p-2 align-middle font-medium truncate" title={part.name}>{part.name}</td>
                       <td className="w-[180px] p-2 align-middle text-slate-500 text-sm truncate" title={part.spec}>{part.spec}</td>
-                      <td className="w-14 p-2 align-middle text-slate-500 text-sm">{part.unit}</td>
-                      <td className="w-[70px] p-2 align-middle text-right font-mono text-sm font-medium text-amber-600">
+                      <td className="w-14 p-2 align-middle text-slate-500 text-sm truncate" title={part.unit}>{part.unit}</td>
+                      <td className="w-[70px] p-2 align-middle text-right font-mono text-sm font-medium text-amber-600 truncate">
                         {Number(part.price).toFixed(2)}
                       </td>
                       <td className="w-[100px] p-2 align-middle text-slate-500 text-sm truncate" title={part.supplier}>{part.supplier || '-'}</td>
