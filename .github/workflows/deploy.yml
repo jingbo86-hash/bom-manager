@@ -1,4 +1,4 @@
-name: 自动部署到服务器
+name: 自动部署到 Windows 服务器
 
 on:
   push:
@@ -8,24 +8,22 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
-
-      - name: 通过 SSH 部署到服务器
+      - name: 通过 SSH 部署到 Windows 服务器
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: 123.57.229.31
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            cd /root/bom-manager/projects
+            cd C:\project\bom-manager-full\projects
             # 拉取最新代码
             git pull origin main
-            # 自动更新数据库表结构（新增列/表不会删除已有数据）
+            # 自动更新数据库表结构
             mysql -u root bom_system < bom_system_schema.sql
             # 安装依赖
             pnpm install
             # 构建
             pnpm run build
-            # 重启服务
-            pm2 restart bom-manager || pm2 start pnpm --name "bom-manager" -- run start
+            # 停止旧服务并启动新服务
+            taskkill /f /im node.exe /t 2>nul
+            start /B pnpm run start
