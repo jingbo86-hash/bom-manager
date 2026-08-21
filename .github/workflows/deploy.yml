@@ -1,0 +1,27 @@
+name: 自动部署到服务器
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 通过 SSH 部署到服务器
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 123.57.229.31
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          # 或者使用 key:
+          # key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /root/bom-manager/projects
+            git pull origin main
+            pnpm install
+            pnpm run build
+            pm2 restart bom-manager || pm2 start pnpm --name "bom-manager" -- run start
