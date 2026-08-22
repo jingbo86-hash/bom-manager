@@ -35,11 +35,6 @@ jobs:
           port: 22
           timeout: 30s
           command_timeout: 15m
+          script_stop: true
           script: |
-            cd /d C:\project\bom-manager-full
-            git pull origin main
-            mysql -u root -p${{ secrets.MYSQL_PASSWORD }} bom_system < bom_system_schema.sql
-            pnpm install
-            pnpm run build
-            taskkill /f /im node.exe /t 2>nul
-            start "" cmd /c "pnpm run start"
+            powershell -Command "Set-Location 'C:\project\bom-manager-full'; git pull origin main; mysql -u root -p${{ secrets.MYSQL_PASSWORD }} bom_system '<' bom_system_schema.sql; pnpm install; pnpm run build; Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Process -NoNewWindow powershell -ArgumentList '-Command','Set-Location C:\project\bom-manager-full; pnpm run start'"
