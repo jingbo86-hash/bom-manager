@@ -16,7 +16,7 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
           timeout: 30s
-          command_timeout: 10m
+          command_timeout: 15m
           script: |
             cd /d C:\project\bom-manager-full
             git pull origin main
@@ -24,4 +24,4 @@ jobs:
             pnpm install
             pnpm run build
             taskkill /f /im node.exe /t 2>nul
-            start /B cmd /c "pnpm run start"
+            start "" cmd /c "pnpm run start"
