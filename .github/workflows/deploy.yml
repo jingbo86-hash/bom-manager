@@ -37,4 +37,6 @@ jobs:
           command_timeout: 15m
           script_stop: true
           script: |
-            C:\project\bom-manager-full\deploy.bat ${{ secrets.MYSQL_PASSWORD }}
+            cd /d C:\project\bom-manager-full
+            git pull origin main
+            deploy.bat ${{ secrets.MYSQL_PASSWORD }}
