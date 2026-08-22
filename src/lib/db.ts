@@ -8,7 +8,7 @@ export async function getPool(): Promise<mysql.Pool> {
       host: '127.0.0.1',
       port: 3306,
       user: 'root',
-      password: '',
+      password: process.env.MYSQL_PASSWORD || '',
       database: 'bom_system',
       waitForConnections: true,
       connectionLimit: 10,

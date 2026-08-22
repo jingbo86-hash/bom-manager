@@ -14,16 +14,14 @@ jobs:
           host: 123.57.229.31
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
+          envs: MYSQL_PASSWORD
           script: |
             cd C:\project\bom-manager-full\projects
-            # 拉取最新代码
             git pull origin main
-            # 自动更新数据库表结构
-            mysql -u root bom_system < bom_system_schema.sql
-            # 安装依赖
+            mysql -u root -p%MYSQL_PASSWORD% bom_system < bom_system_schema.sql
             pnpm install
-            # 构建
             pnpm run build
-            # 停止旧服务并启动新服务
             taskkill /f /im node.exe /t 2>nul
-            start /B pnpm run start
+            start /B cmd /c "pnpm run start"
+        env:
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
