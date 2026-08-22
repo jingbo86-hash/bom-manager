@@ -44,7 +44,7 @@ echo ============================================
 echo  [5/5] Starting server...
 echo ============================================
 taskkill /f /im node.exe /t 2>nul
-start /B cmd /c "cd /d C:\project\bom-manager-full && pnpm run start"
+start /B cmd /c "set MYSQL_PASSWORD=123456 && cd /d C:\project\bom-manager-full && pnpm run start"
 
 echo ============================================
 echo  DEPLOY COMPLETE!
