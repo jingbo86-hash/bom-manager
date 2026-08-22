@@ -211,7 +211,7 @@ export default function Home() {
             {genMsg && (
               <span className="text-xs text-emerald-600 font-medium">{genMsg}</span>
             )}
-            <span className="text-xs text-slate-400 font-mono">v1.0</span>
+            <span className="text-xs text-slate-400 font-mono">v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
           </div>
         </header>
 

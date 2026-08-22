@@ -4,10 +4,28 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - name: 递增版本号
+        run: |
+          VERSION=$(cat version.txt)
+          MAJOR=$(echo $VERSION | cut -d'.' -f1)
+          MINOR=$(echo $VERSION | cut -d'.' -f2)
+          NEW_MINOR=$((MINOR + 1))
+          echo "$MAJOR.$NEW_MINOR" > version.txt
+          git config user.name "Auto Deploy"
+          git config user.email "deploy@bot.com"
+          git add version.txt
+          git commit -m "chore: bump version to $MAJOR.$NEW_MINOR [skip ci]"
+          git push
+
       - name: 通过 SSH 部署到 Windows 服务器
         uses: appleboy/ssh-action@v1.0.3
         with:
