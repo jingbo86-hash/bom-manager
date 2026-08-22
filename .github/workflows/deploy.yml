@@ -26,29 +26,7 @@ jobs:
           git commit -m "chore: bump version to $MAJOR.$NEW_MINOR [skip ci]"
           git push
 
-      - name: 打包代码
-        run: |
-          tar czf /tmp/deploy.tar.gz \
-            --exclude='.next' \
-            --exclude='node_modules' \
-            --exclude='.git' \
-            --exclude='pnpm-lock.yaml' \
-            --exclude='tsconfig.tsbuildinfo' \
-            --exclude='next-env.d.ts' \
-            --exclude='.codegraph' \
-            .
-
-      - name: 上传代码到服务器
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: 123.57.229.31
-          username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASSWORD }}
-          port: 22
-          source: /tmp/deploy.tar.gz
-          target: C:\project\
-
-      - name: 在服务器上部署
+      - name: 通过 SSH 部署到 Windows 服务器
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: 123.57.229.31
@@ -59,4 +37,4 @@ jobs:
           command_timeout: 15m
           script_stop: true
           script: |
-            cmd /c "if not exist C:\project\bom-manager-full mkdir C:\project\bom-manager-full && cd /d C:\project && tar -xzf deploy.tar.gz -C bom-manager-full && del deploy.tar.gz && cd bom-manager-full && powershell -NoProfile -ExecutionPolicy Bypass deploy.ps1 -MYSQL_PASSWORD ${{ secrets.MYSQL_PASSWORD }}"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "& 'C:\project\bom-manager-full\deploy.ps1' -MYSQL_PASSWORD '${{ secrets.MYSQL_PASSWORD }}'"

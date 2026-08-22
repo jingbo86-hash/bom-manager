@@ -5,21 +5,16 @@ param(
 $ErrorActionPreference = "Stop"
 $projectDir = "C:\project\bom-manager-full"
 
-Write-Host "[1/5] Extracting code..."
-Set-Location "C:\project"
-if (Test-Path "deploy.tar.gz") {
-    tar -xzf deploy.tar.gz -C bom-manager-full
-    Remove-Item deploy.tar.gz -Force
-    Write-Host "  Code extracted"
-} else {
-    Write-Host "  No new archive, using existing code"
+Write-Host "[1/5] Pulling latest code..."
+Set-Location $projectDir
+git pull origin main 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  WARNING: git pull failed, using existing code"
 }
 
 Write-Host "[2/5] Updating database..."
-Set-Location $projectDir
 if (Test-Path "bom_system_schema.sql") {
-    $sqlContent = Get-Content "bom_system_schema.sql" -Raw
-    & mysql -u root -p$MYSQL_PASSWORD bom_system -e $sqlContent 2>&1 | Out-Null
+    Get-Content "bom_system_schema.sql" -Raw | & mysql -u root -p$MYSQL_PASSWORD bom_system 2>&1 | Out-Null
     Write-Host "  DB updated"
 } else {
     Write-Host "  No schema file, skipping DB update"
