@@ -14,7 +14,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "[2/5] Updating database..."
 if (Test-Path "bom_system_schema.sql") {
-    Get-Content "bom_system_schema.sql" -Raw | & mysql -u root -p$MYSQL_PASSWORD bom_system 2>&1 | Out-Null
+    cmd /c "mysql -u root -p$MYSQL_PASSWORD bom_system < bom_system_schema.sql 2>&1"
     Write-Host "  DB updated"
 } else {
     Write-Host "  No schema file, skipping DB update"
