@@ -18,7 +18,7 @@ jobs:
           timeout: 30s
           command_timeout: 10m
           script: |
-            cd C:\project\bom-manager-full\projects
+            cd /d C:\project\bom-manager-full
             git pull origin main
             mysql -u root -p${{ secrets.MYSQL_PASSWORD }} bom_system < bom_system_schema.sql
             pnpm install
