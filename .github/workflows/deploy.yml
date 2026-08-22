@@ -37,4 +37,4 @@ jobs:
           command_timeout: 15m
           script_stop: true
           script: |
-            powershell -NoProfile -ExecutionPolicy Bypass -Command "& 'C:\project\bom-manager-full\deploy.ps1' -MYSQL_PASSWORD '${{ secrets.MYSQL_PASSWORD }}'"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location 'C:\project\bom-manager-full'; Write-Host '[1/5] Pulling latest code...'; git pull origin main 2>&1; Write-Host '[2/5] Updating database...'; cmd /c ('mysql -u root -p${{ secrets.MYSQL_PASSWORD }} bom_system < bom_system_schema.sql 2>&1'); Write-Host '[3/5] Installing dependencies...'; pnpm install; Write-Host '[4/5] Building project...'; pnpm run build; Write-Host '[5/5] Starting server...'; Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Process powershell -ArgumentList '-NoProfile','-Command','Set-Location C:\project\bom-manager-full; pnpm run start' -WindowStyle Hidden; Write-Host 'Deploy completed successfully!'"
