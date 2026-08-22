@@ -25,3 +25,20 @@ jobs:
           git add version.txt
           git commit -m "chore: bump version to $MAJOR.$NEW_MINOR [skip ci]"
           git push
+
+      - name: 通过 SSH 部署到 Windows 服务器
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST || '123.57.229.31' }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          timeout: 30s
+          command_timeout: 15m
+          script: |
+            cd /d C:\project\bom-manager-full
+            git pull origin main
+            call pnpm install
+            call pnpm run build
+            taskkill /f /im node.exe /t 2>nul
+            start /B cmd /c "cd /d C:\project\bom-manager-full && pnpm run start"
