@@ -37,16 +37,4 @@ jobs:
           command_timeout: 15m
           script_stop: true
           script: |
-            echo === DIAGNOSTIC ===
-            whoami
-            echo PATH=%PATH%
-            where node
-            where pnpm
-            where git
-            where mysql
-            echo === CHECK DIR ===
-            dir C:\project\bom-manager-full
-            echo === DEPLOY ===
-            cd /d C:\project\bom-manager-full
-            git pull origin main
-            powershell -NoProfile -ExecutionPolicy Bypass -File C:\project\bom-manager-full\deploy.ps1 -MYSQL_PASSWORD ${{ secrets.MYSQL_PASSWORD }}
+            cmd /c "cd /d C:\project\bom-manager-full && git pull origin main && powershell -NoProfile -ExecutionPolicy Bypass -File C:\project\bom-manager-full\deploy.ps1 -MYSQL_PASSWORD ${{ secrets.MYSQL_PASSWORD }}"
