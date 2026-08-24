@@ -7,7 +7,7 @@ import { PartsLibrary } from '@/components/bom/PartsLibrary';
 import { BomManagement } from '@/components/bom/BomManagement';
 import { ProductManagement } from '@/components/bom/ProductManagement';
 import { QuoteSheet } from '@/components/bom/QuoteSheet';
-import { LedScreenCost } from '@/components/led/LedScreenCost';
+import LedScreenCost from '@/components/led/LedScreenCost';
 import { generateSampleData } from '@/lib/generate-sample-data';
 
 const NAV_ITEMS: { key: PageKey; label: string; icon: string }[] = [
