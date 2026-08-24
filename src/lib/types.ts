@@ -157,8 +157,81 @@ export interface BomTreeNode {
   isHighlighted?: boolean;
 }
 
+/** LED 屏幕配置 */
+export interface LedScreenConfig {
+  id: string;
+  name: string;
+  /** 屏幕尺寸 */
+  width: number;       // 宽度 (m)
+  height: number;      // 高度 (m)
+  /** 像素间距 */
+  pixelPitch: number;  // mm (如 1.2, 1.5, 1.8, 2.0, 2.5, 3, 4, 5, 6, 8, 10)
+  /** 使用场景 */
+  indoorOutdoor: 'indoor' | 'outdoor';
+  /** 箱体尺寸 */
+  cabinetWidth: number;   // mm
+  cabinetHeight: number;  // mm
+  /** 亮度 */
+  brightness: number;  // nits
+  /** 扫描方式 */
+  scanMode: number;    // 1/4, 1/8, 1/16, 1/32
+  /** 各部件单价 */
+  unitPrices: {
+    ledBead: number;       // 灯珠单价 (元/颗)
+    driverIc: number;      // 驱动IC单价 (元/颗)
+    pcb: number;           // PCB板单价 (元/㎡)
+    powerSupply: number;   // 电源单价 (元/台)
+    cabinet: number;       // 箱体单价 (元/㎡)
+    receivingCard: number; // 接收卡单价 (元/张)
+    sendingCard: number;   // 发送卡单价 (元/张)
+    cable: number;         // 线材单价 (元/㎡)
+    labor: number;         // 人工组装 (元/㎡)
+    shipping: number;      // 运输安装 (元/㎡)
+    other: number;         // 其他费用 (元/㎡)
+  };
+  /** 成本系数 */
+  coefficients: {
+    profitMargin: number;  // 利润率 (%)
+    taxRate: number;       // 税率 (%)
+    managementRate: number;// 管理费 (%)
+  };
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** LED 成本计算结果 */
+export interface LedCostResult {
+  area: number;            // 总面积 (㎡)
+  cabinetCount: number;    // 箱体数量
+  totalPixels: number;     // 总像素点数
+  pixelsPerSqm: number;    // 每㎡像素点数
+  // 分项成本
+  costItems: LedCostItem[];
+  // 汇总
+  materialCost: number;    // 物料总成本
+  laborCost: number;       // 人工费
+  shippingCost: number;    // 运输费
+  otherCost: number;       // 其他费
+  managementCost: number;  // 管理费
+  taxCost: number;         // 税费
+  totalCost: number;       // 总成本
+  profit: number;          // 利润
+  totalPrice: number;      // 总报价
+  pricePerSqm: number;     // 每㎡报价
+}
+
+export interface LedCostItem {
+  name: string;
+  spec: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  amount: number;
+  ratio: number; // 占比
+}
+
 /** 页面切换 Key */
-export type PageKey = 'parts' | 'bom' | 'products' | 'quotes';
+export type PageKey = 'parts' | 'bom' | 'products' | 'quotes' | 'led';
 
 /** 应用状态 */
 export interface AppState {

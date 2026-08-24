@@ -7,6 +7,7 @@ import { PartsLibrary } from '@/components/bom/PartsLibrary';
 import { BomManagement } from '@/components/bom/BomManagement';
 import { ProductManagement } from '@/components/bom/ProductManagement';
 import { QuoteSheet } from '@/components/bom/QuoteSheet';
+import { LedScreenCost } from '@/components/led/LedScreenCost';
 import { generateSampleData } from '@/lib/generate-sample-data';
 
 const NAV_ITEMS: { key: PageKey; label: string; icon: string }[] = [
@@ -14,6 +15,7 @@ const NAV_ITEMS: { key: PageKey; label: string; icon: string }[] = [
   { key: 'bom', label: 'BOM管理', icon: 'M4 6h16M4 12h16M4 18h8' },
   { key: 'products', label: '产品管理', icon: 'M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z' },
   { key: 'quotes', label: '报价清单', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+  { key: 'led', label: 'LED屏成本核算', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
 ];
 
 export default function Home() {
@@ -123,6 +125,8 @@ export default function Home() {
         return <ProductManagement />;
       case 'quotes':
         return <QuoteSheet />;
+      case 'led':
+        return <LedScreenCost />;
     }
   };
 
