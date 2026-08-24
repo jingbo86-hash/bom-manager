@@ -26,6 +26,7 @@ interface MaterialPrices {
   mountingFrame: number;   // 安装架体（元/m²）
   controlSystem: number;   // 控制系统（元/套）
   radarDetection: number;  // 雷达检测系统（元/套）
+  warningSystem: number;   // 声光警示系统（元/套）
 }
 
 interface Coefficients {
@@ -54,6 +55,7 @@ interface LedScreenConfig {
     solarPower: number;     // 太阳能供电系统数量
     controlSystem: number;  // 控制系统数量
     radarDetection: number; // 雷达检测系统数量
+    warningSystem: number;  // 声光警示系统数量
     powerSupplyPerCabinet: number; // 每个箱体配电源数
   };
   // 成本系数
@@ -114,6 +116,7 @@ const DEFAULT_UNIT_PRICES: MaterialPrices = {
   mountingFrame: 180,
   controlSystem: 3200,
   radarDetection: 6500,
+  warningSystem: 3800,
 };
 
 const DEFAULT_COEFFICIENTS: Coefficients = {
@@ -126,6 +129,7 @@ const DEFAULT_MATERIAL_QTY = {
   solarPower: 1,
   controlSystem: 1,
   radarDetection: 1,
+  warningSystem: 1,
   powerSupplyPerCabinet: 1,
 };
 
@@ -330,6 +334,7 @@ export default function LedScreenCost() {
       { label: '太阳能供电系统', amount: unitPrices.solarPower * materialQuantities.solarPower },
       { label: '控制系统', amount: unitPrices.controlSystem * materialQuantities.controlSystem },
       { label: '雷达检测系统', amount: unitPrices.radarDetection * materialQuantities.radarDetection },
+      { label: '声光警示系统', amount: unitPrices.warningSystem * materialQuantities.warningSystem },
     ];
 
     const subtotal = items.reduce((s, i) => s + i.amount, 0);
@@ -628,6 +633,7 @@ export default function LedScreenCost() {
                 <NumInput label="太阳能供电系统" value={config.unitPrices.solarPower} onChange={(v) => updatePrice('solarPower', v)} unit="元/套" step={10} />
                 <NumInput label="控制系统" value={config.unitPrices.controlSystem} onChange={(v) => updatePrice('controlSystem', v)} unit="元/套" step={10} />
                 <NumInput label="雷达检测系统" value={config.unitPrices.radarDetection} onChange={(v) => updatePrice('radarDetection', v)} unit="元/套" step={10} />
+                  <NumInput label="声光警示系统" value={config.unitPrices.warningSystem} onChange={(v) => updatePrice('warningSystem', v)} unit="元/套" step={10} />
               </div>
               <div className="border-t pt-2 mt-2">
                 <p className="text-xs font-semibold text-slate-600 mb-2">数量系数</p>
@@ -635,6 +641,7 @@ export default function LedScreenCost() {
                   <NumInput label="太阳能供电系统" value={config.materialQuantities.solarPower} onChange={(v) => updateQuantity('solarPower', v)} unit="套" step={1} min={0} />
                   <NumInput label="控制系统" value={config.materialQuantities.controlSystem} onChange={(v) => updateQuantity('controlSystem', v)} unit="套" step={1} min={0} />
                   <NumInput label="雷达检测系统" value={config.materialQuantities.radarDetection} onChange={(v) => updateQuantity('radarDetection', v)} unit="套" step={1} min={0} />
+                  <NumInput label="声光警示系统" value={config.materialQuantities.warningSystem} onChange={(v) => updateQuantity('warningSystem', v)} unit="套" step={1} min={0} />
                   <NumInput label="每箱体配电源" value={config.materialQuantities.powerSupplyPerCabinet} onChange={(v) => updateQuantity('powerSupplyPerCabinet', v)} unit="个/箱" step={1} min={0} />
                 </div>
               </div>
