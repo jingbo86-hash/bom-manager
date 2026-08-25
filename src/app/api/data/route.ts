@@ -10,6 +10,7 @@ const TABLE_MAP: Record<string, string> = {
   quotes: 'quotes',
   categories: 'categories',
   coefficients: 'default_coefficients',
+  ledConfigs: 'led_configs',
 };
 
 // 字段映射（前端字段名 → 数据库字段名）
@@ -39,6 +40,10 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
   },
   products: {
     topAssemblyIds: 'top_assembly_id',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+  },
+  ledConfigs: {
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   },
@@ -72,6 +77,7 @@ const NUMERIC_FIELDS: Record<string, string[]> = {
   products: ['totalMaterialCost', 'totalCost', 'totalAmount', 'suggestedPrice'],
   quotes: ['totalMaterialCost', 'totalCost', 'totalAmount', 'suggestedPrice', 'profitMargin'],
   coefficients: ['labor', 'waste', 'freight', 'tax', 'rent', 'utilities'],
+  ledConfigs: [],
 };
 
 function rowToCamel(row: any, type?: string): any {
@@ -95,6 +101,9 @@ function rowToCamel(row: any, type?: string): any {
   }
   if (result.products && typeof result.products === 'string') {
     try { result.products = JSON.parse(result.products); } catch { result.products = []; }
+  }
+  if (result.data && typeof result.data === 'string') {
+    try { result.data = JSON.parse(result.data); } catch { result.data = null; }
   }
   if (result.topAssemblyIds === null || result.topAssemblyIds === undefined) {
     result.topAssemblyIds = [];

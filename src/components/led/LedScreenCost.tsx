@@ -233,21 +233,42 @@ export default function LedScreenCost() {
   });
   const [msg, setMsg] = useState('');
 
-  // 从 localStorage 加载
+  // 从 MySQL 加载
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('led_screen_configs');
-      if (raw) {
-        const list: LedScreenConfig[] = JSON.parse(raw);
-        setSavedConfigs(list);
-      }
-    } catch { /* ignore */ }
+    (async () => {
+      try {
+        const res = await fetch('/api/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'ledConfigs', action: 'getAll' }),
+        });
+        const json = await res.json();
+        if (json.data) setSavedConfigs(json.data);
+      } catch { /* ignore */ }
+    })();
   }, []);
 
-  // 保存到 localStorage
-  const saveConfigs = useCallback((list: LedScreenConfig[]) => {
-    localStorage.setItem('led_screen_configs', JSON.stringify(list));
+  // 保存到 MySQL
+  const saveConfigs = useCallback(async (list: LedScreenConfig[]) => {
     setSavedConfigs(list);
+    try {
+      for (const c of list) {
+        const existing = list.find((x) => x.id === c.id);
+        // 检查该配置是否已在数据库中存在
+        const res = await fetch('/api/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'ledConfigs', action: 'getById', id: c.id }),
+        });
+        const json = await res.json();
+        const action = json.data ? 'update' : 'create';
+        await fetch('/api/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'ledConfigs', action, data: c, id: c.id }),
+        });
+      }
+    } catch { /* ignore */ }
   }, []);
 
   // 更新配置字段
@@ -371,18 +392,28 @@ export default function LedScreenCost() {
 
   // ─── 保存配置 ────────────────────────────────────────────────────────
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const name = configName.trim() || `配置_${Date.now()}`;
     const newConfig = { ...config, name };
     const existing = savedConfigs.findIndex((c) => c.id === config.id);
     let list: LedScreenConfig[];
+    let action: string;
     if (existing >= 0) {
       list = [...savedConfigs];
       list[existing] = newConfig;
+      action = 'update';
     } else {
       list = [...savedConfigs, newConfig];
+      action = 'create';
     }
-    saveConfigs(list);
+    setSavedConfigs(list);
+    try {
+      await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'ledConfigs', action, data: newConfig }),
+      });
+    } catch { /* ignore */ }
     setMsg(`✓ 配置"${name}"已保存`);
     setTimeout(() => setMsg(''), 2000);
   };
@@ -397,9 +428,16 @@ export default function LedScreenCost() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const list = savedConfigs.filter((c) => c.id !== id);
-    saveConfigs(list);
+    setSavedConfigs(list);
+    try {
+      await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'ledConfigs', action: 'delete', id }),
+      });
+    } catch { /* ignore */ }
     setMsg('✓ 配置已删除');
     setTimeout(() => setMsg(''), 2000);
   };
