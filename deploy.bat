@@ -15,9 +15,15 @@ if %errorlevel% neq 0 (
 echo ============================================
 echo  [2/5] Updating database...
 echo ============================================
+mysql -u root -p123456 -e "CREATE DATABASE IF NOT EXISTS bom_system DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to create database
+    pause
+    exit /b 1
+)
 mysql -u root -p123456 bom_system < bom_system_schema.sql
 if %errorlevel% neq 0 (
-    echo [WARN] DB update may have failed, continuing...
+    echo [WARN] DB schema update may have failed, continuing...
 )
 
 echo ============================================
