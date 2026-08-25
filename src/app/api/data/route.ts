@@ -135,6 +135,15 @@ export async function POST(request: NextRequest) {
         const orderCol = table === 'bom_entries' ? 'id' : 'created_at';
         sql = `SELECT * FROM \`${table}\` ORDER BY \`${orderCol}\` DESC`;
         const rows = await query(sql);
+        // 特殊处理 quotes 表：从 data JSON 列反序列化字段
+        if (type === 'quotes') {
+          return NextResponse.json({
+            data: rows.map((r: Record<string, unknown>) => {
+              const dataObj = typeof r.data === 'string' ? JSON.parse(r.data) : (r.data || {});
+              return { ...dataObj, id: r.id, createdAt: r.created_at, updatedAt: r.updated_at };
+            }),
+          });
+        }
         return NextResponse.json({ data: rows.map((r: Record<string, unknown>) => rowToCamel(r, table)) });
       }
 
@@ -212,6 +221,16 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'No data provided' }, { status: 400 });
         }
         for (const item of data) {
+          // 特殊处理 quotes 表：将除 id/createdAt 外的所有字段序列化到 data JSON 列
+          if (type === 'quotes') {
+            const { id, createdAt, ...rest } = item;
+            const dataJson = JSON.stringify(rest);
+            await query(
+              `INSERT IGNORE INTO \`${table}\` (id, name, data, created_at) VALUES (?, ?, ?, ?)`,
+              [id, rest.title || rest.name || '', dataJson, createdAt ? new Date(createdAt).toISOString().slice(0, 19).replace('T', ' ') : null]
+            );
+            continue;
+          }
           const fields = Object.keys(item);
           const dbFields = fields.map(f => `\`${toDbField(type, f)}\``);
           const placeholders = fields.map(() => '?');

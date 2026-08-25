@@ -81,12 +81,19 @@ DROP TABLE IF EXISTS `default_coefficients`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `default_coefficients` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) NOT NULL,
-  `value` decimal(12,4) DEFAULT '0.0000',
+  `labor` decimal(12,4) DEFAULT '0.0000',
+  `waste` decimal(12,4) DEFAULT '0.0000',
+  `freight` decimal(12,4) DEFAULT '0.0000',
+  `tax` decimal(12,4) DEFAULT '0.0000',
+  `rent` decimal(12,4) DEFAULT '0.0000',
+  `utilities` decimal(12,4) DEFAULT '0.0000',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Insert default coefficients
+INSERT INTO `default_coefficients` (`id`, `labor`, `waste`, `freight`, `tax`, `rent`, `utilities`) VALUES (1, 0.05, 0.02, 0.03, 0.13, 0.05, 0.02);
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -102,6 +109,8 @@ CREATE TABLE `parts` (
   `name` varchar(200) NOT NULL,
   `spec` varchar(500) DEFAULT '',
   `unit` varchar(20) DEFAULT '',
+  `price` decimal(12,2) DEFAULT '0.00',
+  `quantity` decimal(12,4) DEFAULT '0.0000',
   `unit_price` decimal(12,2) DEFAULT '0.00',
   `supplier` varchar(200) DEFAULT '',
   `category_id` varchar(36) DEFAULT NULL,
