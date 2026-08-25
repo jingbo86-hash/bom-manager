@@ -25,6 +25,10 @@ mysql -u root -p123456 bom_system < bom_system_schema.sql
 if %errorlevel% neq 0 (
     echo [WARN] DB schema update may have failed, continuing...
 )
+mysql -u root -p123456 bom_system < migrate.sql
+if %errorlevel% neq 0 (
+    echo [WARN] DB migration may have failed, continuing...
+)
 
 echo ============================================
 echo  [3/5] Installing dependencies...
