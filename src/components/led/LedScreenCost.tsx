@@ -136,6 +136,30 @@ const MODULE_DATABASE: LedModuleSpec[] = [
   { id: 'gm-p8', model: 'P8', factory: '光茗光电', type: 'SMD', pitch: 'P8', moduleW: 320, moduleH: 160, brightness: 5000, refreshRate: 1920, powerConsumption: 135, scanMode: '1/4', price: 28, cabinetW: 640, cabinetH: 480 },
   { id: 'gm-p10', model: 'P10', factory: '光茗光电', type: 'SMD', pitch: 'P10', moduleW: 320, moduleH: 160, brightness: 5500, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 22, cabinetW: 640, cabinetH: 480 },
 
+  // ── P10-160×160 小模组 ──
+  { id: 'lyd-p10s', model: 'P10', factory: '利亚德', type: 'SMD', pitch: 'P10', moduleW: 160, moduleH: 160, brightness: 3000, refreshRate: 1920, powerConsumption: 130, scanMode: '1/4', price: 14, cabinetW: 640, cabinetH: 480 },
+  { id: 'zm-p10s', model: 'P10', factory: '洲明科技', type: 'SMD', pitch: 'P10', moduleW: 160, moduleH: 160, brightness: 3000, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 12, cabinetW: 640, cabinetH: 480 },
+  { id: 'abs-p10s', model: 'P10', factory: '艾比森', type: 'SMD', pitch: 'P10', moduleW: 160, moduleH: 160, brightness: 3000, refreshRate: 1920, powerConsumption: 128, scanMode: '1/4', price: 13, cabinetW: 640, cabinetH: 480 },
+  { id: 'qljc-p10s', model: 'P10', factory: '强力巨彩', type: 'SMD', pitch: 'P10', moduleW: 160, moduleH: 160, brightness: 3000, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 10, cabinetW: 640, cabinetH: 480 },
+  { id: 'lm-p10s', model: 'P10', factory: '雷曼光电', type: 'SMD', pitch: 'P10', moduleW: 160, moduleH: 160, brightness: 3000, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 14, cabinetW: 640, cabinetH: 480 },
+  { id: 'hjcl-p10s', model: 'P10', factory: '海佳彩亮', type: 'SMD', pitch: 'P10', moduleW: 160, moduleH: 160, brightness: 3000, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 9, cabinetW: 640, cabinetH: 480 },
+  { id: 'ty-p10s', model: 'P10', factory: '通用', type: 'SMD', pitch: 'P10', moduleW: 160, moduleH: 160, brightness: 3000, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 8, cabinetW: 640, cabinetH: 480 },
+  { id: 'glg-p10s', model: 'P10', factory: '格莱光', type: 'SMD', pitch: 'P10', moduleW: 160, moduleH: 160, brightness: 3000, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 11, cabinetW: 640, cabinetH: 480 },
+  { id: 'xet-p10s', model: 'P10', factory: '鑫恩拓', type: 'SMD', pitch: 'P10', moduleW: 160, moduleH: 160, brightness: 3000, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 9, cabinetW: 640, cabinetH: 480 },
+  { id: 'gm-p10s', model: 'P10', factory: '光茗光电', type: 'SMD', pitch: 'P10', moduleW: 160, moduleH: 160, brightness: 3000, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 10, cabinetW: 640, cabinetH: 480 },
+
+  // ── P12.5户外全系列 ──
+  { id: 'lyd-p12.5', model: 'P12.5', factory: '利亚德', type: 'SMD', pitch: 'P12.5', moduleW: 200, moduleH: 100, brightness: 9000, refreshRate: 1920, powerConsumption: 105, scanMode: '1/2', price: 16, cabinetW: 800, cabinetH: 600 },
+  { id: 'zm-p12.5', model: 'P12.5', factory: '洲明科技', type: 'SMD', pitch: 'P12.5', moduleW: 200, moduleH: 100, brightness: 9000, refreshRate: 1920, powerConsumption: 105, scanMode: '1/2', price: 14, cabinetW: 800, cabinetH: 600 },
+  { id: 'abs-p12.5', model: 'P12.5', factory: '艾比森', type: 'SMD', pitch: 'P12.5', moduleW: 200, moduleH: 100, brightness: 9000, refreshRate: 1920, powerConsumption: 105, scanMode: '1/2', price: 15, cabinetW: 800, cabinetH: 600 },
+  { id: 'qljc-p12.5', model: 'P12.5', factory: '强力巨彩', type: 'SMD', pitch: 'P12.5', moduleW: 200, moduleH: 100, brightness: 9000, refreshRate: 1920, powerConsumption: 105, scanMode: '1/2', price: 12, cabinetW: 800, cabinetH: 600 },
+  { id: 'lm-p12.5', model: 'P12.5', factory: '雷曼光电', type: 'SMD', pitch: 'P12.5', moduleW: 200, moduleH: 100, brightness: 9000, refreshRate: 1920, powerConsumption: 105, scanMode: '1/2', price: 16, cabinetW: 800, cabinetH: 600 },
+  { id: 'hjcl-p12.5', model: 'P12.5', factory: '海佳彩亮', type: 'SMD', pitch: 'P12.5', moduleW: 200, moduleH: 100, brightness: 9000, refreshRate: 1920, powerConsumption: 105, scanMode: '1/2', price: 11, cabinetW: 800, cabinetH: 600 },
+  { id: 'ty-p12.5', model: 'P12.5', factory: '通用', type: 'SMD', pitch: 'P12.5', moduleW: 200, moduleH: 100, brightness: 9000, refreshRate: 1920, powerConsumption: 105, scanMode: '1/2', price: 10, cabinetW: 800, cabinetH: 600 },
+  { id: 'glg-p12.5', model: 'P12.5', factory: '格莱光', type: 'SMD', pitch: 'P12.5', moduleW: 200, moduleH: 100, brightness: 9000, refreshRate: 1920, powerConsumption: 105, scanMode: '1/2', price: 13, cabinetW: 800, cabinetH: 600 },
+  { id: 'xet-p12.5', model: 'P12.5', factory: '鑫恩拓', type: 'SMD', pitch: 'P12.5', moduleW: 200, moduleH: 100, brightness: 9000, refreshRate: 1920, powerConsumption: 105, scanMode: '1/2', price: 11, cabinetW: 800, cabinetH: 600 },
+  { id: 'gm-p12.5', model: 'P12.5', factory: '光茗光电', type: 'SMD', pitch: 'P12.5', moduleW: 200, moduleH: 100, brightness: 9000, refreshRate: 1920, powerConsumption: 105, scanMode: '1/2', price: 12, cabinetW: 800, cabinetH: 600 },
+
   // ── P12户外全系列 (亮度8000-12000) ──
   { id: 'lyd-p12', model: 'P12', factory: '利亚德', type: 'SMD', pitch: 'P12', moduleW: 384, moduleH: 192, brightness: 10000, refreshRate: 1920, powerConsumption: 110, scanMode: '1/2', price: 18, cabinetW: 768, cabinetH: 576 },
   { id: 'zm-p12', model: 'P12', factory: '洲明科技', type: 'SMD', pitch: 'P12', moduleW: 384, moduleH: 192, brightness: 10000, refreshRate: 1920, powerConsumption: 110, scanMode: '1/2', price: 16, cabinetW: 768, cabinetH: 576 },
@@ -228,6 +252,7 @@ interface LedScreenConfig {
   width: number;
   height: number;
   selectedModuleId: string;
+  modulePrices: Record<string, number>;  // editable prices per module id
   supportingPrices: Record<string, number>;
   managementFee: number;
   taxRate: number;
@@ -284,8 +309,9 @@ function calculate(config: LedScreenConfig): CalculationResult | null {
   const totalPixels = pixelsW * pixelsH;
   const pixelDensity = Math.round(totalPixels / area);
 
-  // Module cost
-  const moduleCost = mod.price * moduleCount;
+  // Module cost (use editable price if set, otherwise default)
+  const modulePrice = config.modulePrices[mod.id] ?? mod.price;
+  const moduleCost = modulePrice * moduleCount;
 
   // Supporting unit costs
   const supportingCosts = SUPPORTING_UNITS.map(u => {
@@ -347,6 +373,7 @@ export default function LedScreenCost() {
     width: 3,
     height: 2,
     selectedModuleId: 'glg-p4',
+    modulePrices: {},
     supportingPrices: Object.fromEntries(SUPPORTING_UNITS.map(u => [u.id, u.defaultPrice])),
     managementFee: 5,
     taxRate: 13,
@@ -438,6 +465,7 @@ export default function LedScreenCost() {
       width: 3,
       height: 2,
       selectedModuleId: 'glg-p4',
+      modulePrices: {},
       supportingPrices: Object.fromEntries(SUPPORTING_UNITS.map(u => [u.id, u.defaultPrice])),
       managementFee: 5,
       taxRate: 13,
@@ -602,23 +630,28 @@ export default function LedScreenCost() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-1">
                   {filteredModules.map(mod => {
                     const isSelected = config.selectedModuleId === mod.id;
+                    const modPrice = config.modulePrices[mod.id] ?? mod.price;
                     const pitchNum = parseFloat(mod.pitch.replace('P', ''));
+                    // Calculate module count for this module
+                    const mW = mod.moduleW / 1000;
+                    const mH = mod.moduleH / 1000;
+                    const modCount = Math.ceil(config.width / mW) * Math.ceil(config.height / mH);
+                    const modArea = modCount * (mod.moduleW * mod.moduleH) / 1_000_000;
+                    const pricePerM2 = modArea > 0 ? (modPrice * modCount) / modArea : 0;
                     return (
-                      <button
+                      <div
                         key={mod.id}
-                        type="button"
-                        onClick={() => setConfig(prev => ({
-                          ...prev,
-                          selectedModuleId: mod.id,
-                          // Also update width/height to match module dimensions
-                          width: Math.ceil(prev.width / (mod.moduleW / 1000)) * (mod.moduleW / 1000),
-                          height: Math.ceil(prev.height / (mod.moduleH / 1000)) * (mod.moduleH / 1000),
-                        }))}
-                        className={`text-left border rounded-lg p-2 transition-all ${
+                        className={`text-left border rounded-lg p-2 transition-all cursor-pointer ${
                           isSelected
                             ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50'
                             : 'border-slate-200 hover:border-slate-300 bg-white'
                         }`}
+                        onClick={() => setConfig(prev => ({
+                          ...prev,
+                          selectedModuleId: mod.id,
+                          width: Math.ceil(prev.width / mW) * mW,
+                          height: Math.ceil(prev.height / mH) * mH,
+                        }))}
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-sm font-semibold text-slate-800">{mod.model}</span>
@@ -632,17 +665,37 @@ export default function LedScreenCost() {
                           {mod.factory} | {mod.pitch} | {mod.moduleW}×{mod.moduleH}mm
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-bold text-blue-600">
-                            ¥{mod.price.toFixed(0)}<span className="text-xs font-normal text-slate-400">/块</span>
-                          </span>
+                          <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                            <span className="text-xs text-slate-400 shrink-0">¥</span>
+                            <Input
+                              type="number"
+                              value={modPrice}
+                              onChange={e => {
+                                const v = parseFloat(e.target.value) || 0;
+                                setConfig(prev => ({
+                                  ...prev,
+                                  modulePrices: { ...prev.modulePrices, [mod.id]: v },
+                                }));
+                              }}
+                              className="h-6 w-16 text-xs text-right"
+                              step={1}
+                              min={0}
+                            />
+                            <span className="text-xs text-slate-400">/块</span>
+                          </div>
                           <span className="text-xs text-slate-400">{mod.scanMode}扫</span>
                         </div>
+                        {isSelected && config.width > 0 && config.height > 0 && (
+                          <div className="text-xs text-emerald-600 mt-1 font-medium">
+                            需 {modCount} 块 · ¥{pricePerM2.toFixed(0)}/m²
+                          </div>
+                        )}
                         <div className="text-xs text-slate-400 mt-1 flex flex-wrap gap-x-2">
                           <span>{mod.brightness}cd</span>
                           <span>{mod.refreshRate}Hz</span>
                           <span>{mod.powerConsumption}W/m²</span>
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
