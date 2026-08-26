@@ -197,16 +197,16 @@ const MODULE_DATABASE: LedModuleSpec[] = [
   { id: 'gm-p20', model: 'P20', factory: '光茗光电', type: 'SMD', pitch: 'P20', moduleW: 320, moduleH: 160, brightness: 15000, refreshRate: 1920, powerConsumption: 90, scanMode: '1/2', price: 9, cabinetW: 960, cabinetH: 640 },
 
   // ── P25户外全系列 (亮度15000-20000) ──
-  { id: 'lyd-p25', model: 'P25', factory: '利亚德', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 10, cabinetW: 800, cabinetH: 600 },
-  { id: 'zm-p25', model: 'P25', factory: '洲明科技', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 9, cabinetW: 800, cabinetH: 600 },
-  { id: 'abs-p25', model: 'P25', factory: '艾比森', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 9, cabinetW: 800, cabinetH: 600 },
-  { id: 'qljc-p25', model: 'P25', factory: '强力巨彩', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 7, cabinetW: 800, cabinetH: 600 },
-  { id: 'lm-p25', model: 'P25', factory: '雷曼光电', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 10, cabinetW: 800, cabinetH: 600 },
-  { id: 'hjcl-p25', model: 'P25', factory: '海佳彩亮', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 6, cabinetW: 800, cabinetH: 600 },
-  { id: 'ty-p25', model: 'P25', factory: '通用', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 5, cabinetW: 800, cabinetH: 600 },
-  { id: 'glg-p25', model: 'P25', factory: '格莱光', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 8, cabinetW: 800, cabinetH: 600 },
-  { id: 'xet-p25', model: 'P25', factory: '鑫恩拓', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 6, cabinetW: 800, cabinetH: 600 },
-  { id: 'gm-p25', model: 'P25', factory: '光茗光电', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 7, cabinetW: 800, cabinetH: 600 },
+  { id: 'lyd-p25', model: 'P25', factory: '利亚德', type: 'SMD', pitch: 'P25', moduleW: 200, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 10, cabinetW: 800, cabinetH: 600 },
+  { id: 'zm-p25', model: 'P25', factory: '洲明科技', type: 'SMD', pitch: 'P25', moduleW: 200, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 9, cabinetW: 800, cabinetH: 600 },
+  { id: 'abs-p25', model: 'P25', factory: '艾比森', type: 'SMD', pitch: 'P25', moduleW: 200, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 9, cabinetW: 800, cabinetH: 600 },
+  { id: 'qljc-p25', model: 'P25', factory: '强力巨彩', type: 'SMD', pitch: 'P25', moduleW: 200, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 7, cabinetW: 800, cabinetH: 600 },
+  { id: 'lm-p25', model: 'P25', factory: '雷曼光电', type: 'SMD', pitch: 'P25', moduleW: 200, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 10, cabinetW: 800, cabinetH: 600 },
+  { id: 'hjcl-p25', model: 'P25', factory: '海佳彩亮', type: 'SMD', pitch: 'P25', moduleW: 200, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 6, cabinetW: 800, cabinetH: 600 },
+  { id: 'ty-p25', model: 'P25', factory: '通用', type: 'SMD', pitch: 'P25', moduleW: 200, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 5, cabinetW: 800, cabinetH: 600 },
+  { id: 'glg-p25', model: 'P25', factory: '格莱光', type: 'SMD', pitch: 'P25', moduleW: 200, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 8, cabinetW: 800, cabinetH: 600 },
+  { id: 'xet-p25', model: 'P25', factory: '鑫恩拓', type: 'SMD', pitch: 'P25', moduleW: 200, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 6, cabinetW: 800, cabinetH: 600 },
+  { id: 'gm-p25', model: 'P25', factory: '光茗光电', type: 'SMD', pitch: 'P25', moduleW: 200, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 7, cabinetW: 800, cabinetH: 600 },
 
   // ── P33.33户外全系列 (亮度15000-20000) ──
   { id: 'lyd-p33', model: 'P33.33', factory: '利亚德', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 8, cabinetW: 960, cabinetH: 640 },
@@ -219,6 +219,17 @@ const MODULE_DATABASE: LedModuleSpec[] = [
   { id: 'glg-p33', model: 'P33.33', factory: '格莱光', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 6, cabinetW: 960, cabinetH: 640 },
   { id: 'xet-p33', model: 'P33.33', factory: '鑫恩拓', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 4, cabinetW: 960, cabinetH: 640 },
   { id: 'gm-p33', model: 'P33.33', factory: '光茗光电', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 5, cabinetW: 960, cabinetH: 640 },
+  // P31.25 250×250mm
+  { id: 'lyd-p3125', model: 'P31.25', factory: '利亚德', type: 'SMD', pitch: 'P31.25', moduleW: 250, moduleH: 250, brightness: 20000, refreshRate: 960, powerConsumption: 65, scanMode: '1/1', price: 8, cabinetW: 1000, cabinetH: 750 },
+  { id: 'zm-p3125', model: 'P31.25', factory: '洲明科技', type: 'SMD', pitch: 'P31.25', moduleW: 250, moduleH: 250, brightness: 20000, refreshRate: 960, powerConsumption: 65, scanMode: '1/1', price: 7, cabinetW: 1000, cabinetH: 750 },
+  { id: 'abs-p3125', model: 'P31.25', factory: '艾比森', type: 'SMD', pitch: 'P31.25', moduleW: 250, moduleH: 250, brightness: 20000, refreshRate: 960, powerConsumption: 65, scanMode: '1/1', price: 7, cabinetW: 1000, cabinetH: 750 },
+  { id: 'qljc-p3125', model: 'P31.25', factory: '强力巨彩', type: 'SMD', pitch: 'P31.25', moduleW: 250, moduleH: 250, brightness: 20000, refreshRate: 960, powerConsumption: 65, scanMode: '1/1', price: 5, cabinetW: 1000, cabinetH: 750 },
+  { id: 'lm-p3125', model: 'P31.25', factory: '雷曼光电', type: 'SMD', pitch: 'P31.25', moduleW: 250, moduleH: 250, brightness: 20000, refreshRate: 960, powerConsumption: 65, scanMode: '1/1', price: 8, cabinetW: 1000, cabinetH: 750 },
+  { id: 'hjcl-p3125', model: 'P31.25', factory: '海佳彩亮', type: 'SMD', pitch: 'P31.25', moduleW: 250, moduleH: 250, brightness: 20000, refreshRate: 960, powerConsumption: 65, scanMode: '1/1', price: 4, cabinetW: 1000, cabinetH: 750 },
+  { id: 'ty-p3125', model: 'P31.25', factory: '通用', type: 'SMD', pitch: 'P31.25', moduleW: 250, moduleH: 250, brightness: 20000, refreshRate: 960, powerConsumption: 65, scanMode: '1/1', price: 4, cabinetW: 1000, cabinetH: 750 },
+  { id: 'glg-p3125', model: 'P31.25', factory: '格莱光', type: 'SMD', pitch: 'P31.25', moduleW: 250, moduleH: 250, brightness: 20000, refreshRate: 960, powerConsumption: 65, scanMode: '1/1', price: 6, cabinetW: 1000, cabinetH: 750 },
+  { id: 'xet-p3125', model: 'P31.25', factory: '鑫恩拓', type: 'SMD', pitch: 'P31.25', moduleW: 250, moduleH: 250, brightness: 20000, refreshRate: 960, powerConsumption: 65, scanMode: '1/1', price: 5, cabinetW: 1000, cabinetH: 750 },
+  { id: 'gm-p3125', model: 'P31.25', factory: '光茗光电', type: 'SMD', pitch: 'P31.25', moduleW: 250, moduleH: 250, brightness: 20000, refreshRate: 960, powerConsumption: 65, scanMode: '1/1', price: 5, cabinetW: 1000, cabinetH: 750 },
 ];
 
 const FACTORIES = ['全部', '利亚德', '洲明科技', '艾比森', '强力巨彩', '雷曼光电', '海佳彩亮', '通用', '格莱光', '鑫恩拓', '光茗光电'];
