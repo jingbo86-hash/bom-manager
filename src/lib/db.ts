@@ -5,7 +5,7 @@ let pool: mysql.Pool | null = null;
 export async function getPool(): Promise<mysql.Pool> {
   if (!pool) {
     pool = mysql.createPool({
-      host: '127.0.0.1',
+      host: 'localhost',
       port: 3306,
       user: 'root',
       password: process.env.MYSQL_PASSWORD || '123456',
