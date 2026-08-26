@@ -9,6 +9,9 @@
 - **BOM管理** (`src/components/bom/BomManagement.tsx`): 组件创建、BOM树形结构、最多10层
 - **产品管理** (`src/components/bom/ProductManagement.tsx`): 产品与BOM关联
 - **报价清单** (`src/components/bom/QuoteSheet.tsx`): 报价生成、打印/PDF导出
+- **LED屏成本核算** (`src/components/led/LedScreenCost.tsx`): LED屏参数配置、材料清单、成本计算、多配置保存
+- **光伏供电系统核算** (`src/components/pv/PvSystemCost.tsx`): 太阳能板/蓄电池/逆变器等参数配置与成本核算
+- **雾区诱导灯核算** (`src/components/fog/FogLightCost.tsx`): 诱导灯/控制柜/传感器等参数配置与成本核算
 
 ### 核心文件
 - `src/lib/types.ts` - 数据类型定义

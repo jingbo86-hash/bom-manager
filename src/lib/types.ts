@@ -231,7 +231,7 @@ export interface LedCostItem {
 }
 
 /** 页面切换 Key */
-export type PageKey = 'parts' | 'bom' | 'products' | 'quotes' | 'led';
+export type PageKey = 'parts' | 'bom' | 'products' | 'quotes' | 'led' | 'pv' | 'fog';
 
 /** 应用状态 */
 export interface AppState {

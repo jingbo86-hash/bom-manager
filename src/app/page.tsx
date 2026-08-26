@@ -8,6 +8,8 @@ import { BomManagement } from '@/components/bom/BomManagement';
 import { ProductManagement } from '@/components/bom/ProductManagement';
 import { QuoteSheet } from '@/components/bom/QuoteSheet';
 import LedScreenCost from '@/components/led/LedScreenCost';
+import PvSystemCost from '@/components/pv/PvSystemCost';
+import FogLightCost from '@/components/fog/FogLightCost';
 import { generateSampleData } from '@/lib/generate-sample-data';
 
 const NAV_ITEMS: { key: PageKey; label: string; icon: string }[] = [
@@ -16,6 +18,8 @@ const NAV_ITEMS: { key: PageKey; label: string; icon: string }[] = [
   { key: 'products', label: '产品管理', icon: 'M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z' },
   { key: 'quotes', label: '报价清单', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
   { key: 'led', label: 'LED屏成本核算', icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+  { key: 'pv', label: '光伏供电核算', icon: 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z' },
+  { key: 'fog', label: '雾区诱导灯核算', icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' },
 ];
 
 export default function Home() {
@@ -127,6 +131,10 @@ export default function Home() {
         return <QuoteSheet />;
       case 'led':
         return <LedScreenCost />;
+      case 'pv':
+        return <PvSystemCost />;
+      case 'fog':
+        return <FogLightCost />;
     }
   };
 
