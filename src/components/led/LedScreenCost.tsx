@@ -1,239 +1,305 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Trash2, Save, Download, Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Trash2, Save, Download, Plus, ChevronDown, ChevronRight, Pencil, Monitor, Box, Cable, Radio, Bell, Radar, Flame } from 'lucide-react';
+
+// ─── Module Database ────────────────────────────────────────────────────────
+
+interface LedModuleSpec {
+  id: string;
+  model: string;
+  factory: string;
+  type: 'COB' | 'SMD' | 'GOB';
+  pitch: string;       // e.g. "P1.25"
+  moduleW: number;     // mm
+  moduleH: number;     // mm
+  brightness: number;  // cd/m²
+  refreshRate: number; // Hz
+  powerConsumption: number; // W/m²
+  scanMode: string;    // e.g. "1/32"
+  price: number;       // 元/块
+  cabinetW: number;    // 推荐箱体宽 mm
+  cabinetH: number;    // 推荐箱体高 mm
+}
+
+const MODULE_DATABASE: LedModuleSpec[] = [
+  // ── 利亚德 ──
+  { id: 'lyd-p1.25', model: 'P1.25', factory: '利亚德', type: 'COB', pitch: 'P1.25', moduleW: 320, moduleH: 160, brightness: 2000, refreshRate: 3840, powerConsumption: 280, scanMode: '1/32', price: 320, cabinetW: 640, cabinetH: 480 },
+  { id: 'lyd-p1.5', model: 'P1.5', factory: '利亚德', type: 'COB', pitch: 'P1.5', moduleW: 320, moduleH: 160, brightness: 2000, refreshRate: 3840, powerConsumption: 260, scanMode: '1/32', price: 260, cabinetW: 640, cabinetH: 480 },
+  { id: 'lyd-p1.8', model: 'P1.8', factory: '利亚德', type: 'SMD', pitch: 'P1.8', moduleW: 320, moduleH: 160, brightness: 1800, refreshRate: 3840, powerConsumption: 240, scanMode: '1/32', price: 180, cabinetW: 640, cabinetH: 480 },
+  { id: 'lyd-p2.5', model: 'P2.5', factory: '利亚德', type: 'SMD', pitch: 'P2.5', moduleW: 320, moduleH: 160, brightness: 2500, refreshRate: 3840, powerConsumption: 220, scanMode: '1/32', price: 120, cabinetW: 640, cabinetH: 480 },
+  { id: 'lyd-p3', model: 'P3', factory: '利亚德', type: 'SMD', pitch: 'P3', moduleW: 192, moduleH: 192, brightness: 3000, refreshRate: 3840, powerConsumption: 200, scanMode: '1/16', price: 85, cabinetW: 576, cabinetH: 576 },
+  { id: 'lyd-p4', model: 'P4', factory: '利亚德', type: 'SMD', pitch: 'P4', moduleW: 256, moduleH: 128, brightness: 3500, refreshRate: 3840, powerConsumption: 180, scanMode: '1/16', price: 65, cabinetW: 640, cabinetH: 480 },
+  { id: 'lyd-p5', model: 'P5', factory: '利亚德', type: 'SMD', pitch: 'P5', moduleW: 320, moduleH: 160, brightness: 4000, refreshRate: 3840, powerConsumption: 160, scanMode: '1/8', price: 55, cabinetW: 640, cabinetH: 480 },
+  { id: 'lyd-p6', model: 'P6', factory: '利亚德', type: 'SMD', pitch: 'P6', moduleW: 192, moduleH: 192, brightness: 4500, refreshRate: 3840, powerConsumption: 150, scanMode: '1/8', price: 45, cabinetW: 576, cabinetH: 576 },
+  { id: 'lyd-p8', model: 'P8', factory: '利亚德', type: 'SMD', pitch: 'P8', moduleW: 320, moduleH: 160, brightness: 5000, refreshRate: 3840, powerConsumption: 140, scanMode: '1/4', price: 38, cabinetW: 640, cabinetH: 480 },
+  { id: 'lyd-p10', model: 'P10', factory: '利亚德', type: 'SMD', pitch: 'P10', moduleW: 320, moduleH: 160, brightness: 5500, refreshRate: 1920, powerConsumption: 130, scanMode: '1/4', price: 32, cabinetW: 640, cabinetH: 480 },
+
+  // ── 洲明科技 ──
+  { id: 'zm-p1.2', model: 'P1.2', factory: '洲明科技', type: 'COB', pitch: 'P1.2', moduleW: 320, moduleH: 160, brightness: 1800, refreshRate: 3840, powerConsumption: 300, scanMode: '1/32', price: 350, cabinetW: 640, cabinetH: 480 },
+  { id: 'zm-p1.5', model: 'P1.5', factory: '洲明科技', type: 'COB', pitch: 'P1.5', moduleW: 320, moduleH: 160, brightness: 2000, refreshRate: 3840, powerConsumption: 270, scanMode: '1/32', price: 280, cabinetW: 640, cabinetH: 480 },
+  { id: 'zm-p2', model: 'P2', factory: '洲明科技', type: 'SMD', pitch: 'P2', moduleW: 320, moduleH: 160, brightness: 2200, refreshRate: 3840, powerConsumption: 230, scanMode: '1/32', price: 145, cabinetW: 640, cabinetH: 480 },
+  { id: 'zm-p2.5', model: 'P2.5', factory: '洲明科技', type: 'SMD', pitch: 'P2.5', moduleW: 320, moduleH: 160, brightness: 2500, refreshRate: 3840, powerConsumption: 210, scanMode: '1/32', price: 115, cabinetW: 640, cabinetH: 480 },
+  { id: 'zm-p3', model: 'P3', factory: '洲明科技', type: 'SMD', pitch: 'P3', moduleW: 192, moduleH: 192, brightness: 3000, refreshRate: 3840, powerConsumption: 190, scanMode: '1/16', price: 80, cabinetW: 576, cabinetH: 576 },
+  { id: 'zm-p4', model: 'P4', factory: '洲明科技', type: 'SMD', pitch: 'P4', moduleW: 256, moduleH: 128, brightness: 3500, refreshRate: 3840, powerConsumption: 170, scanMode: '1/16', price: 60, cabinetW: 640, cabinetH: 480 },
+  { id: 'zm-p5', model: 'P5', factory: '洲明科技', type: 'SMD', pitch: 'P5', moduleW: 320, moduleH: 160, brightness: 4000, refreshRate: 3840, powerConsumption: 155, scanMode: '1/8', price: 50, cabinetW: 640, cabinetH: 480 },
+  { id: 'zm-p6', model: 'P6', factory: '洲明科技', type: 'SMD', pitch: 'P6', moduleW: 192, moduleH: 192, brightness: 4500, refreshRate: 3840, powerConsumption: 145, scanMode: '1/8', price: 42, cabinetW: 576, cabinetH: 576 },
+  { id: 'zm-p8', model: 'P8', factory: '洲明科技', type: 'SMD', pitch: 'P8', moduleW: 320, moduleH: 160, brightness: 5000, refreshRate: 1920, powerConsumption: 135, scanMode: '1/4', price: 35, cabinetW: 640, cabinetH: 480 },
+  { id: 'zm-p10', model: 'P10', factory: '洲明科技', type: 'SMD', pitch: 'P10', moduleW: 320, moduleH: 160, brightness: 5500, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 30, cabinetW: 640, cabinetH: 480 },
+
+  // ── 艾比森 ──
+  { id: 'abs-p1.2', model: 'P1.2', factory: '艾比森', type: 'COB', pitch: 'P1.2', moduleW: 320, moduleH: 160, brightness: 2000, refreshRate: 3840, powerConsumption: 290, scanMode: '1/32', price: 340, cabinetW: 640, cabinetH: 480 },
+  { id: 'abs-p1.5', model: 'P1.5', factory: '艾比森', type: 'COB', pitch: 'P1.5', moduleW: 320, moduleH: 160, brightness: 2000, refreshRate: 3840, powerConsumption: 265, scanMode: '1/32', price: 270, cabinetW: 640, cabinetH: 480 },
+  { id: 'abs-p2', model: 'P2', factory: '艾比森', type: 'SMD', pitch: 'P2', moduleW: 320, moduleH: 160, brightness: 2200, refreshRate: 3840, powerConsumption: 225, scanMode: '1/32', price: 140, cabinetW: 640, cabinetH: 480 },
+  { id: 'abs-p2.5', model: 'P2.5', factory: '艾比森', type: 'SMD', pitch: 'P2.5', moduleW: 320, moduleH: 160, brightness: 2500, refreshRate: 3840, powerConsumption: 205, scanMode: '1/32', price: 110, cabinetW: 640, cabinetH: 480 },
+  { id: 'abs-p3', model: 'P3', factory: '艾比森', type: 'SMD', pitch: 'P3', moduleW: 192, moduleH: 192, brightness: 3000, refreshRate: 3840, powerConsumption: 195, scanMode: '1/16', price: 78, cabinetW: 576, cabinetH: 576 },
+  { id: 'abs-p4', model: 'P4', factory: '艾比森', type: 'SMD', pitch: 'P4', moduleW: 256, moduleH: 128, brightness: 3500, refreshRate: 3840, powerConsumption: 175, scanMode: '1/16', price: 58, cabinetW: 640, cabinetH: 480 },
+  { id: 'abs-p5', model: 'P5', factory: '艾比森', type: 'SMD', pitch: 'P5', moduleW: 320, moduleH: 160, brightness: 4000, refreshRate: 3840, powerConsumption: 160, scanMode: '1/8', price: 48, cabinetW: 640, cabinetH: 480 },
+  { id: 'abs-p8', model: 'P8', factory: '艾比森', type: 'SMD', pitch: 'P8', moduleW: 320, moduleH: 160, brightness: 5000, refreshRate: 1920, powerConsumption: 138, scanMode: '1/4', price: 33, cabinetW: 640, cabinetH: 480 },
+  { id: 'abs-p10', model: 'P10', factory: '艾比森', type: 'SMD', pitch: 'P10', moduleW: 320, moduleH: 160, brightness: 5500, refreshRate: 1920, powerConsumption: 128, scanMode: '1/4', price: 28, cabinetW: 640, cabinetH: 480 },
+
+  // ── 强力巨彩 ──
+  { id: 'qljc-p1.5', model: 'P1.5', factory: '强力巨彩', type: 'COB', pitch: 'P1.5', moduleW: 320, moduleH: 160, brightness: 1800, refreshRate: 3840, powerConsumption: 270, scanMode: '1/32', price: 250, cabinetW: 640, cabinetH: 480 },
+  { id: 'qljc-p2', model: 'P2', factory: '强力巨彩', type: 'SMD', pitch: 'P2', moduleW: 320, moduleH: 160, brightness: 2200, refreshRate: 3840, powerConsumption: 230, scanMode: '1/32', price: 130, cabinetW: 640, cabinetH: 480 },
+  { id: 'qljc-p2.5', model: 'P2.5', factory: '强力巨彩', type: 'SMD', pitch: 'P2.5', moduleW: 320, moduleH: 160, brightness: 2500, refreshRate: 3840, powerConsumption: 210, scanMode: '1/32', price: 105, cabinetW: 640, cabinetH: 480 },
+  { id: 'qljc-p3', model: 'P3', factory: '强力巨彩', type: 'SMD', pitch: 'P3', moduleW: 192, moduleH: 192, brightness: 3000, refreshRate: 3840, powerConsumption: 190, scanMode: '1/16', price: 72, cabinetW: 576, cabinetH: 576 },
+  { id: 'qljc-p4', model: 'P4', factory: '强力巨彩', type: 'SMD', pitch: 'P4', moduleW: 256, moduleH: 128, brightness: 3500, refreshRate: 3840, powerConsumption: 170, scanMode: '1/16', price: 52, cabinetW: 640, cabinetH: 480 },
+  { id: 'qljc-p5', model: 'P5', factory: '强力巨彩', type: 'SMD', pitch: 'P5', moduleW: 320, moduleH: 160, brightness: 4000, refreshRate: 3840, powerConsumption: 155, scanMode: '1/8', price: 45, cabinetW: 640, cabinetH: 480 },
+  { id: 'qljc-p6', model: 'P6', factory: '强力巨彩', type: 'SMD', pitch: 'P6', moduleW: 192, moduleH: 192, brightness: 4500, refreshRate: 3840, powerConsumption: 145, scanMode: '1/8', price: 38, cabinetW: 576, cabinetH: 576 },
+  { id: 'qljc-p8', model: 'P8', factory: '强力巨彩', type: 'SMD', pitch: 'P8', moduleW: 320, moduleH: 160, brightness: 5000, refreshRate: 1920, powerConsumption: 135, scanMode: '1/4', price: 30, cabinetW: 640, cabinetH: 480 },
+  { id: 'qljc-p10', model: 'P10', factory: '强力巨彩', type: 'SMD', pitch: 'P10', moduleW: 320, moduleH: 160, brightness: 5500, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 25, cabinetW: 640, cabinetH: 480 },
+
+  // ── 雷曼光电 ──
+  { id: 'lm-p1.2', model: 'P1.2', factory: '雷曼光电', type: 'COB', pitch: 'P1.2', moduleW: 320, moduleH: 160, brightness: 2000, refreshRate: 3840, powerConsumption: 300, scanMode: '1/32', price: 360, cabinetW: 640, cabinetH: 480 },
+  { id: 'lm-p1.5', model: 'P1.5', factory: '雷曼光电', type: 'COB', pitch: 'P1.5', moduleW: 320, moduleH: 160, brightness: 2000, refreshRate: 3840, powerConsumption: 270, scanMode: '1/32', price: 290, cabinetW: 640, cabinetH: 480 },
+  { id: 'lm-p2', model: 'P2', factory: '雷曼光电', type: 'SMD', pitch: 'P2', moduleW: 320, moduleH: 160, brightness: 2200, refreshRate: 3840, powerConsumption: 230, scanMode: '1/32', price: 150, cabinetW: 640, cabinetH: 480 },
+  { id: 'lm-p2.5', model: 'P2.5', factory: '雷曼光电', type: 'SMD', pitch: 'P2.5', moduleW: 320, moduleH: 160, brightness: 2500, refreshRate: 3840, powerConsumption: 210, scanMode: '1/32', price: 118, cabinetW: 640, cabinetH: 480 },
+  { id: 'lm-p3', model: 'P3', factory: '雷曼光电', type: 'SMD', pitch: 'P3', moduleW: 192, moduleH: 192, brightness: 3000, refreshRate: 3840, powerConsumption: 190, scanMode: '1/16', price: 82, cabinetW: 576, cabinetH: 576 },
+  { id: 'lm-p4', model: 'P4', factory: '雷曼光电', type: 'SMD', pitch: 'P4', moduleW: 256, moduleH: 128, brightness: 3500, refreshRate: 3840, powerConsumption: 170, scanMode: '1/16', price: 62, cabinetW: 640, cabinetH: 480 },
+  { id: 'lm-p5', model: 'P5', factory: '雷曼光电', type: 'SMD', pitch: 'P5', moduleW: 320, moduleH: 160, brightness: 4000, refreshRate: 3840, powerConsumption: 155, scanMode: '1/8', price: 52, cabinetW: 640, cabinetH: 480 },
+  { id: 'lm-p6', model: 'P6', factory: '雷曼光电', type: 'SMD', pitch: 'P6', moduleW: 192, moduleH: 192, brightness: 4500, refreshRate: 3840, powerConsumption: 145, scanMode: '1/8', price: 42, cabinetW: 576, cabinetH: 576 },
+  { id: 'lm-p8', model: 'P8', factory: '雷曼光电', type: 'SMD', pitch: 'P8', moduleW: 320, moduleH: 160, brightness: 5000, refreshRate: 1920, powerConsumption: 135, scanMode: '1/4', price: 35, cabinetW: 640, cabinetH: 480 },
+  { id: 'lm-p10', model: 'P10', factory: '雷曼光电', type: 'SMD', pitch: 'P10', moduleW: 320, moduleH: 160, brightness: 5500, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 30, cabinetW: 640, cabinetH: 480 },
+
+  // ── 海佳彩亮 ──
+  { id: 'hjcl-p2', model: 'P2', factory: '海佳彩亮', type: 'SMD', pitch: 'P2', moduleW: 320, moduleH: 160, brightness: 2000, refreshRate: 3840, powerConsumption: 230, scanMode: '1/32', price: 120, cabinetW: 640, cabinetH: 480 },
+  { id: 'hjcl-p2.5', model: 'P2.5', factory: '海佳彩亮', type: 'SMD', pitch: 'P2.5', moduleW: 320, moduleH: 160, brightness: 2500, refreshRate: 3840, powerConsumption: 210, scanMode: '1/32', price: 95, cabinetW: 640, cabinetH: 480 },
+  { id: 'hjcl-p3', model: 'P3', factory: '海佳彩亮', type: 'SMD', pitch: 'P3', moduleW: 192, moduleH: 192, brightness: 3000, refreshRate: 3840, powerConsumption: 190, scanMode: '1/16', price: 68, cabinetW: 576, cabinetH: 576 },
+  { id: 'hjcl-p4', model: 'P4', factory: '海佳彩亮', type: 'SMD', pitch: 'P4', moduleW: 256, moduleH: 128, brightness: 3500, refreshRate: 3840, powerConsumption: 170, scanMode: '1/16', price: 48, cabinetW: 640, cabinetH: 480 },
+  { id: 'hjcl-p5', model: 'P5', factory: '海佳彩亮', type: 'SMD', pitch: 'P5', moduleW: 320, moduleH: 160, brightness: 4000, refreshRate: 3840, powerConsumption: 155, scanMode: '1/8', price: 42, cabinetW: 640, cabinetH: 480 },
+  { id: 'hjcl-p6', model: 'P6', factory: '海佳彩亮', type: 'SMD', pitch: 'P6', moduleW: 192, moduleH: 192, brightness: 4500, refreshRate: 3840, powerConsumption: 145, scanMode: '1/8', price: 35, cabinetW: 576, cabinetH: 576 },
+  { id: 'hjcl-p8', model: 'P8', factory: '海佳彩亮', type: 'SMD', pitch: 'P8', moduleW: 320, moduleH: 160, brightness: 5000, refreshRate: 1920, powerConsumption: 135, scanMode: '1/4', price: 28, cabinetW: 640, cabinetH: 480 },
+  { id: 'hjcl-p10', model: 'P10', factory: '海佳彩亮', type: 'SMD', pitch: 'P10', moduleW: 320, moduleH: 160, brightness: 5500, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 22, cabinetW: 640, cabinetH: 480 },
+
+  // ── 通用品牌 ──
+  { id: 'ty-p2', model: 'P2', factory: '通用', type: 'SMD', pitch: 'P2', moduleW: 320, moduleH: 160, brightness: 2000, refreshRate: 3840, powerConsumption: 230, scanMode: '1/32', price: 110, cabinetW: 640, cabinetH: 480 },
+  { id: 'ty-p2.5', model: 'P2.5', factory: '通用', type: 'SMD', pitch: 'P2.5', moduleW: 320, moduleH: 160, brightness: 2500, refreshRate: 3840, powerConsumption: 210, scanMode: '1/32', price: 90, cabinetW: 640, cabinetH: 480 },
+  { id: 'ty-p3', model: 'P3', factory: '通用', type: 'SMD', pitch: 'P3', moduleW: 192, moduleH: 192, brightness: 3000, refreshRate: 3840, powerConsumption: 190, scanMode: '1/16', price: 65, cabinetW: 576, cabinetH: 576 },
+  { id: 'ty-p4', model: 'P4', factory: '通用', type: 'SMD', pitch: 'P4', moduleW: 256, moduleH: 128, brightness: 3500, refreshRate: 3840, powerConsumption: 170, scanMode: '1/16', price: 45, cabinetW: 640, cabinetH: 480 },
+  { id: 'ty-p5', model: 'P5', factory: '通用', type: 'SMD', pitch: 'P5', moduleW: 320, moduleH: 160, brightness: 4000, refreshRate: 3840, powerConsumption: 155, scanMode: '1/8', price: 40, cabinetW: 640, cabinetH: 480 },
+  { id: 'ty-p6', model: 'P6', factory: '通用', type: 'SMD', pitch: 'P6', moduleW: 192, moduleH: 192, brightness: 4500, refreshRate: 3840, powerConsumption: 145, scanMode: '1/8', price: 32, cabinetW: 576, cabinetH: 576 },
+  { id: 'ty-p8', model: 'P8', factory: '通用', type: 'SMD', pitch: 'P8', moduleW: 320, moduleH: 160, brightness: 5000, refreshRate: 1920, powerConsumption: 135, scanMode: '1/4', price: 25, cabinetW: 640, cabinetH: 480 },
+  { id: 'ty-p10', model: 'P10', factory: '通用', type: 'SMD', pitch: 'P10', moduleW: 320, moduleH: 160, brightness: 5500, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 20, cabinetW: 640, cabinetH: 480 },
+
+  // ── 格莱光 ──
+  { id: 'glg-p2', model: 'P2', factory: '格莱光', type: 'SMD', pitch: 'P2', moduleW: 320, moduleH: 160, brightness: 2200, refreshRate: 3840, powerConsumption: 230, scanMode: '1/32', price: 125, cabinetW: 640, cabinetH: 480 },
+  { id: 'glg-p2.5', model: 'P2.5', factory: '格莱光', type: 'SMD', pitch: 'P2.5', moduleW: 320, moduleH: 160, brightness: 2500, refreshRate: 3840, powerConsumption: 210, scanMode: '1/32', price: 100, cabinetW: 640, cabinetH: 480 },
+  { id: 'glg-p3', model: 'P3', factory: '格莱光', type: 'SMD', pitch: 'P3', moduleW: 192, moduleH: 192, brightness: 3000, refreshRate: 3840, powerConsumption: 190, scanMode: '1/16', price: 70, cabinetW: 576, cabinetH: 576 },
+  { id: 'glg-p4', model: 'P4', factory: '格莱光', type: 'SMD', pitch: 'P4', moduleW: 256, moduleH: 128, brightness: 3500, refreshRate: 3840, powerConsumption: 170, scanMode: '1/16', price: 50, cabinetW: 640, cabinetH: 480 },
+  { id: 'glg-p5', model: 'P5', factory: '格莱光', type: 'SMD', pitch: 'P5', moduleW: 320, moduleH: 160, brightness: 4000, refreshRate: 3840, powerConsumption: 155, scanMode: '1/8', price: 45, cabinetW: 640, cabinetH: 480 },
+  { id: 'glg-p6', model: 'P6', factory: '格莱光', type: 'SMD', pitch: 'P6', moduleW: 192, moduleH: 192, brightness: 4500, refreshRate: 3840, powerConsumption: 145, scanMode: '1/8', price: 38, cabinetW: 576, cabinetH: 576 },
+  { id: 'glg-p8', model: 'P8', factory: '格莱光', type: 'SMD', pitch: 'P8', moduleW: 320, moduleH: 160, brightness: 5000, refreshRate: 1920, powerConsumption: 135, scanMode: '1/4', price: 32, cabinetW: 640, cabinetH: 480 },
+  { id: 'glg-p10', model: 'P10', factory: '格莱光', type: 'SMD', pitch: 'P10', moduleW: 320, moduleH: 160, brightness: 5500, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 28, cabinetW: 640, cabinetH: 480 },
+
+  // ── 鑫恩拓 ──
+  { id: 'xet-p2', model: 'P2', factory: '鑫恩拓', type: 'SMD', pitch: 'P2', moduleW: 320, moduleH: 160, brightness: 2000, refreshRate: 3840, powerConsumption: 230, scanMode: '1/32', price: 115, cabinetW: 640, cabinetH: 480 },
+  { id: 'xet-p2.5', model: 'P2.5', factory: '鑫恩拓', type: 'SMD', pitch: 'P2.5', moduleW: 320, moduleH: 160, brightness: 2500, refreshRate: 3840, powerConsumption: 210, scanMode: '1/32', price: 92, cabinetW: 640, cabinetH: 480 },
+  { id: 'xet-p3', model: 'P3', factory: '鑫恩拓', type: 'SMD', pitch: 'P3', moduleW: 192, moduleH: 192, brightness: 3000, refreshRate: 3840, powerConsumption: 190, scanMode: '1/16', price: 65, cabinetW: 576, cabinetH: 576 },
+  { id: 'xet-p4', model: 'P4', factory: '鑫恩拓', type: 'SMD', pitch: 'P4', moduleW: 256, moduleH: 128, brightness: 3500, refreshRate: 3840, powerConsumption: 170, scanMode: '1/16', price: 48, cabinetW: 640, cabinetH: 480 },
+  { id: 'xet-p5', model: 'P5', factory: '鑫恩拓', type: 'SMD', pitch: 'P5', moduleW: 320, moduleH: 160, brightness: 4000, refreshRate: 3840, powerConsumption: 155, scanMode: '1/8', price: 42, cabinetW: 640, cabinetH: 480 },
+  { id: 'xet-p6', model: 'P6', factory: '鑫恩拓', type: 'SMD', pitch: 'P6', moduleW: 192, moduleH: 192, brightness: 4500, refreshRate: 3840, powerConsumption: 145, scanMode: '1/8', price: 35, cabinetW: 576, cabinetH: 576 },
+  { id: 'xet-p8', model: 'P8', factory: '鑫恩拓', type: 'SMD', pitch: 'P8', moduleW: 320, moduleH: 160, brightness: 5000, refreshRate: 1920, powerConsumption: 135, scanMode: '1/4', price: 28, cabinetW: 640, cabinetH: 480 },
+  { id: 'xet-p10', model: 'P10', factory: '鑫恩拓', type: 'SMD', pitch: 'P10', moduleW: 320, moduleH: 160, brightness: 5500, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 22, cabinetW: 640, cabinetH: 480 },
+
+  // ── 光茗光电 ──
+  { id: 'gm-p2', model: 'P2', factory: '光茗光电', type: 'SMD', pitch: 'P2', moduleW: 320, moduleH: 160, brightness: 2200, refreshRate: 3840, powerConsumption: 230, scanMode: '1/32', price: 118, cabinetW: 640, cabinetH: 480 },
+  { id: 'gm-p2.5', model: 'P2.5', factory: '光茗光电', type: 'SMD', pitch: 'P2.5', moduleW: 320, moduleH: 160, brightness: 2500, refreshRate: 3840, powerConsumption: 210, scanMode: '1/32', price: 95, cabinetW: 640, cabinetH: 480 },
+  { id: 'gm-p3', model: 'P3', factory: '光茗光电', type: 'SMD', pitch: 'P3', moduleW: 192, moduleH: 192, brightness: 3000, refreshRate: 3840, powerConsumption: 190, scanMode: '1/16', price: 68, cabinetW: 576, cabinetH: 576 },
+  { id: 'gm-p4', model: 'P4', factory: '光茗光电', type: 'SMD', pitch: 'P4', moduleW: 256, moduleH: 128, brightness: 3500, refreshRate: 3840, powerConsumption: 170, scanMode: '1/16', price: 48, cabinetW: 640, cabinetH: 480 },
+  { id: 'gm-p5', model: 'P5', factory: '光茗光电', type: 'SMD', pitch: 'P5', moduleW: 320, moduleH: 160, brightness: 4000, refreshRate: 3840, powerConsumption: 155, scanMode: '1/8', price: 42, cabinetW: 640, cabinetH: 480 },
+  { id: 'gm-p6', model: 'P6', factory: '光茗光电', type: 'SMD', pitch: 'P6', moduleW: 192, moduleH: 192, brightness: 4500, refreshRate: 3840, powerConsumption: 145, scanMode: '1/8', price: 35, cabinetW: 576, cabinetH: 576 },
+  { id: 'gm-p8', model: 'P8', factory: '光茗光电', type: 'SMD', pitch: 'P8', moduleW: 320, moduleH: 160, brightness: 5000, refreshRate: 1920, powerConsumption: 135, scanMode: '1/4', price: 28, cabinetW: 640, cabinetH: 480 },
+  { id: 'gm-p10', model: 'P10', factory: '光茗光电', type: 'SMD', pitch: 'P10', moduleW: 320, moduleH: 160, brightness: 5500, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 22, cabinetW: 640, cabinetH: 480 },
+];
+
+const FACTORIES = ['全部', '利亚德', '洲明科技', '艾比森', '强力巨彩', '雷曼光电', '海佳彩亮', '通用', '格莱光', '鑫恩拓', '光茗光电'];
+
+// ─── Supporting Unit Types ──────────────────────────────────────────────────
+
+interface SupportingUnit {
+  id: string;
+  icon: React.ReactNode;
+  name: string;
+  description: string;
+  unit: string;
+  defaultPrice: number;
+}
+
+const SUPPORTING_UNITS: SupportingUnit[] = [
+  { id: 'metalShell', icon: <Box className="w-4 h-4 text-slate-500" />, name: '金属外壳', description: 'LED屏体钢结构外壳、防水箱体', unit: '元/m²', defaultPrice: 280 },
+  { id: 'controlUnit', icon: <Monitor className="w-4 h-4 text-blue-500" />, name: '控制单元', description: '发送卡、接收卡、视频处理器', unit: '元/套', defaultPrice: 3500 },
+  { id: 'powerUnit', icon: <Flame className="w-4 h-4 text-orange-500" />, name: '供电单元', description: '电源模块、配电箱、UPS', unit: '元/套', defaultPrice: 2800 },
+  { id: 'networkUnit', icon: <Cable className="w-4 h-4 text-cyan-500" />, name: '联网设备', description: '光纤收发器、交换机、4G/5G模块', unit: '元/套', defaultPrice: 1800 },
+  { id: 'warningUnit', icon: <Bell className="w-4 h-4 text-amber-500" />, name: '声光警示单元', description: '扬声器、警示灯、蜂鸣器', unit: '元/套', defaultPrice: 3800 },
+  { id: 'radarUnit', icon: <Radar className="w-4 h-4 text-emerald-500" />, name: '雷达检测单元', description: '毫米波雷达、激光雷达、传感器', unit: '元/套', defaultPrice: 6500 },
+  { id: 'mountingUnit', icon: <Radio className="w-4 h-4 text-purple-500" />, name: '安装杆件组装', description: '立杆、横臂、法兰、紧固件', unit: '元/套', defaultPrice: 2200 },
+];
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-
-type PixelPitch = string; // "P1.2", "P1.5", ..., "P33.33"
-
-interface MaterialPrices {
-  ledModule: number;       // LED模组（元/块）
-  cabinet: number;         // 箱体（元/个）
-  solarPower: number;      // 太阳能供电系统（元/套）
-  powerSupply: number;     // 电源（元/个）
-  mountingFrame: number;   // 安装架体（元/m²）
-  controlSystem: number;   // 控制系统（元/套）
-  radarDetection: number;  // 雷达检测系统（元/套）
-  warningSystem: number;   // 声光警示系统（元/套）
-}
-
-interface Coefficients {
-  managementFee: number;   // 管理费 %
-  taxRate: number;         // 税率 %
-  profitMargin: number;    // 利润率 %
-}
 
 interface LedScreenConfig {
   id: string;
   name: string;
-  // 屏幕参数
-  width: number;           // 宽度(m)
-  height: number;          // 高度(m)
-  pitch: PixelPitch;       // 像素间距
-  environment: 'indoor' | 'outdoor';
-  manufacturer: string;
-  moduleWidth: number;     // 模组宽度(mm)
-  moduleHeight: number;    // 模组高度(mm)
-  cabinetWidth: number;    // 箱体宽度(mm)
-  cabinetHeight: number;   // 箱体高度(mm)
-  // 材料单价
-  unitPrices: MaterialPrices;
-  // 数量系数
-  materialQuantities: {
-    solarPower: number;     // 太阳能供电系统数量
-    controlSystem: number;  // 控制系统数量
-    radarDetection: number; // 雷达检测系统数量
-    warningSystem: number;  // 声光警示系统数量
-    powerSupplyPerCabinet: number; // 每个箱体配电源数
-  };
-  // 成本系数
-  coefficients: Coefficients;
+  width: number;
+  height: number;
+  selectedModuleId: string;
+  supportingPrices: Record<string, number>;
+  managementFee: number;
+  taxRate: number;
+  profitMargin: number;
 }
 
 interface CalculationResult {
   area: number;
   moduleCount: number;
+  cabinetCount: number;
   totalPixels: number;
   pixelDensity: number;
-  cabinetCount: number;
-  costBreakdown: { label: string; amount: number; percentage: number }[];
-  totalCost: number;
+  moduleCost: number;
+  supportingCosts: { id: string; name: string; amount: number; unit: string }[];
+  materialTotal: number;
+  managementFee: number;
+  tax: number;
+  profit: number;
   finalPrice: number;
+  pricePerM2: number;
+  costBreakdown: { label: string; amount: number; percentage: number }[];
 }
 
-// ─── Constants ──────────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
-const PIXEL_PITCHES: PixelPitch[] = [
-  'P1.2', 'P1.5', 'P1.8', 'P2.0', 'P2.5', 'P3', 'P4', 'P5',
-  'P6', 'P8', 'P10', 'P16', 'P20', 'P25', 'P31.25', 'P33.33',
-];
-
-const MANUFACTURERS = ['格莱光', '鑫恩拓', '光茗光电'];
-
-const PITCH_MM: Record<string, number> = {
-  'P1.2': 1.2, 'P1.5': 1.5, 'P1.8': 1.8, 'P2.0': 2.0, 'P2.5': 2.5,
-  'P3': 3, 'P4': 4, 'P5': 5, 'P6': 6, 'P8': 8, 'P10': 10,
-  'P16': 16, 'P20': 20, 'P25': 25, 'P31.25': 31.25, 'P33.33': 33.33,
-};
-
-// 根据像素间距推荐模组尺寸 (mm)
-const RECOMMENDED_MODULE_SIZE: Record<string, { w: number; h: number }> = {
-  'P1.2': { w: 320, h: 160 }, 'P1.5': { w: 320, h: 160 }, 'P1.8': { w: 320, h: 160 },
-  'P2.0': { w: 320, h: 160 }, 'P2.5': { w: 320, h: 160 },
-  'P3': { w: 192, h: 192 }, 'P4': { w: 256, h: 128 }, 'P5': { w: 320, h: 160 },
-  'P6': { w: 192, h: 192 }, 'P8': { w: 320, h: 160 }, 'P10': { w: 320, h: 160 },
-  'P16': { w: 640, h: 320 }, 'P20': { w: 640, h: 320 }, 'P25': { w: 640, h: 320 },
-  'P31.25': { w: 640, h: 320 }, 'P33.33': { w: 640, h: 320 },
-};
-
-// 根据像素间距推荐箱体尺寸 (mm)
-const RECOMMENDED_CABINET_SIZE: Record<string, { w: number; h: number }> = {
-  'P1.2': { w: 640, h: 480 }, 'P1.5': { w: 640, h: 480 }, 'P1.8': { w: 640, h: 480 },
-  'P2.0': { w: 640, h: 480 }, 'P2.5': { w: 640, h: 480 },
-  'P3': { w: 576, h: 576 }, 'P4': { w: 640, h: 480 }, 'P5': { w: 640, h: 480 },
-  'P6': { w: 576, h: 576 }, 'P8': { w: 640, h: 480 }, 'P10': { w: 640, h: 480 },
-  'P16': { w: 1280, h: 640 }, 'P20': { w: 1280, h: 640 }, 'P25': { w: 1280, h: 640 },
-  'P31.25': { w: 1280, h: 640 }, 'P33.33': { w: 1280, h: 640 },
-};
-
-const DEFAULT_UNIT_PRICES: MaterialPrices = {
-  ledModule: 85,
-  cabinet: 350,
-  solarPower: 5800,
-  powerSupply: 120,
-  mountingFrame: 180,
-  controlSystem: 3200,
-  radarDetection: 6500,
-  warningSystem: 3800,
-};
-
-const DEFAULT_COEFFICIENTS: Coefficients = {
-  managementFee: 5,
-  taxRate: 13,
-  profitMargin: 15,
-};
-
-const DEFAULT_MATERIAL_QTY = {
-  solarPower: 1,
-  controlSystem: 1,
-  radarDetection: 1,
-  warningSystem: 1,
-  powerSupplyPerCabinet: 1,
-};
-
-function createDefaultConfig(name: string): LedScreenConfig {
-  return {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    name,
-    width: 3,
-    height: 2,
-    pitch: 'P4',
-    environment: 'indoor',
-    manufacturer: '格莱光',
-    moduleWidth: 320,
-    moduleHeight: 160,
-    cabinetWidth: 640,
-    cabinetHeight: 480,
-    unitPrices: { ...DEFAULT_UNIT_PRICES },
-    materialQuantities: { ...DEFAULT_MATERIAL_QTY },
-    coefficients: { ...DEFAULT_COEFFICIENTS },
-  };
-}
-
-function formatMoney(v: number): string {
+function formatMoney(v: number) {
   return `¥${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-// ─── Section Header ─────────────────────────────────────────────────────────
-
-function SectionHeader({
-  label,
-  expanded,
-  onToggle,
-}: {
-  label: string;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="flex items-center gap-2 text-sm font-semibold text-slate-900 bg-slate-100 w-full px-3 py-2 rounded-md hover:bg-slate-200 transition-colors"
-    >
-      {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-      {label}
-    </button>
-  );
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-// ─── Number Input ───────────────────────────────────────────────────────────
+function calculate(config: LedScreenConfig): CalculationResult | null {
+  const mod = MODULE_DATABASE.find(m => m.id === config.selectedModuleId);
+  if (!mod || config.width <= 0 || config.height <= 0) return null;
 
-function NumInput({
-  label,
-  value,
-  onChange,
-  unit,
-  step = 0.01,
-  min = 0,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  unit?: string;
-  step?: number;
-  min?: number;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <Label className="w-32 shrink-0 text-xs text-slate-600">{label}</Label>
-      <Input
-        type="number"
-        value={value}
-        onChange={(e) => {
-          const v = parseFloat(e.target.value);
-          if (!isNaN(v) && v >= min) onChange(v);
-        }}
-        step={step}
-        min={min}
-        className="h-7 text-xs"
-      />
-      {unit && <span className="text-xs text-slate-500 w-10">{unit}</span>}
-    </div>
-  );
+  const area = config.width * config.height;
+  const moduleW = mod.moduleW / 1000;
+  const moduleH = mod.moduleH / 1000;
+  const modulesPerRow = Math.ceil(config.width / moduleW);
+  const modulesPerCol = Math.ceil(config.height / moduleH);
+  const moduleCount = modulesPerRow * modulesPerCol;
+
+  const cabW = mod.cabinetW / 1000;
+  const cabH = mod.cabinetH / 1000;
+  const cabsPerRow = Math.ceil(config.width / cabW);
+  const cabsPerCol = Math.ceil(config.height / cabH);
+  const cabinetCount = cabsPerRow * cabsPerCol;
+
+  const pitchMm = parseFloat(mod.pitch.replace('P', ''));
+  const pixelsW = Math.round((config.width * 1000) / pitchMm);
+  const pixelsH = Math.round((config.height * 1000) / pitchMm);
+  const totalPixels = pixelsW * pixelsH;
+  const pixelDensity = Math.round(totalPixels / area);
+
+  // Module cost
+  const moduleCost = mod.price * moduleCount;
+
+  // Supporting unit costs
+  const supportingCosts = SUPPORTING_UNITS.map(u => {
+    const price = config.supportingPrices[u.id] ?? u.defaultPrice;
+    let amount: number;
+    if (u.id === 'metalShell') {
+      amount = price * area; // 元/m² × 面积
+    } else {
+      amount = price; // 单套
+    }
+    return { id: u.id, name: u.name, amount: Math.round(amount * 100) / 100, unit: u.unit };
+  });
+
+  const supportingTotal = supportingCosts.reduce((s, c) => s + c.amount, 0);
+  const materialTotal = moduleCost + supportingTotal;
+  const managementFee = materialTotal * config.managementFee / 100;
+  const subtotal = materialTotal + managementFee;
+  const tax = subtotal * config.taxRate / 100;
+  const profit = (subtotal + tax) * config.profitMargin / 100;
+  const finalPrice = subtotal + tax + profit;
+  const pricePerM2 = finalPrice / area;
+
+  const breakdown = [
+    { label: 'LED模组', amount: moduleCost },
+    ...supportingCosts.map(c => ({ label: c.name, amount: c.amount })),
+    { label: '管理费', amount: managementFee },
+    { label: '税金', amount: tax },
+    { label: '利润', amount: profit },
+  ];
+
+  return {
+    area: Math.round(area * 100) / 100,
+    moduleCount,
+    cabinetCount,
+    totalPixels,
+    pixelDensity,
+    moduleCost,
+    supportingCosts,
+    materialTotal: Math.round(materialTotal * 100) / 100,
+    managementFee: Math.round(managementFee * 100) / 100,
+    tax: Math.round(tax * 100) / 100,
+    profit: Math.round(profit * 100) / 100,
+    finalPrice: Math.round(finalPrice * 100) / 100,
+    pricePerM2: Math.round(pricePerM2 * 100) / 100,
+    costBreakdown: breakdown.map(item => ({
+      ...item,
+      amount: Math.round(item.amount * 100) / 100,
+      percentage: finalPrice > 0 ? Math.round(item.amount / finalPrice * 10000) / 100 : 0,
+    })),
+  };
 }
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function LedScreenCost() {
-  // 当前配置
-  const [config, setConfig] = useState<LedScreenConfig>(() => createDefaultConfig('新配置'));
-  // 保存的配置列表
-  const [savedConfigs, setSavedConfigs] = useState<LedScreenConfig[]>([]);
-  // 当前配置名称
+  const [config, setConfig] = useState<LedScreenConfig>(() => ({
+    id: generateId(),
+    name: '新配置',
+    width: 3,
+    height: 2,
+    selectedModuleId: 'glg-p4',
+    supportingPrices: Object.fromEntries(SUPPORTING_UNITS.map(u => [u.id, u.defaultPrice])),
+    managementFee: 5,
+    taxRate: 13,
+    profitMargin: 15,
+  }));
+  const [savedConfigs, setSavedConfigs] = useState<any[]>([]);
   const [configName, setConfigName] = useState('新配置');
-  // 展开折叠
-  const [expanded, setExpanded] = useState({
-    screen: true,
-    materials: true,
-    coefficients: true,
-    result: true,
-  });
+  const [selectedFactory, setSelectedFactory] = useState('全部');
   const [msg, setMsg] = useState('');
 
-  // 从 MySQL 加载
+  const selectedModule = MODULE_DATABASE.find(m => m.id === config.selectedModuleId);
+
+  // Load from MySQL
   useEffect(() => {
     (async () => {
       try {
@@ -248,155 +314,18 @@ export default function LedScreenCost() {
     })();
   }, []);
 
-  // 保存到 MySQL
-  const saveConfigs = useCallback(async (list: LedScreenConfig[]) => {
-    setSavedConfigs(list);
-    try {
-      for (const c of list) {
-        const existing = list.find((x) => x.id === c.id);
-        // 检查该配置是否已在数据库中存在
-        const res = await fetch('/api/data', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'ledConfigs', action: 'getById', id: c.id }),
-        });
-        const json = await res.json();
-        const action = json.data ? 'update' : 'create';
-        await fetch('/api/data', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'ledConfigs', action, data: c, id: c.id }),
-        });
-      }
-    } catch { /* ignore */ }
-  }, []);
-
-  // 更新配置字段
-  const updateConfig = useCallback(<K extends keyof LedScreenConfig>(
-    key: K, value: LedScreenConfig[K]
-  ) => {
-    setConfig((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
-  // 更新材料单价
-  const updatePrice = useCallback(<K extends keyof MaterialPrices>(
-    key: K, value: number
-  ) => {
-    setConfig((prev) => ({
+  const updateSupportingPrice = useCallback((id: string, price: number) => {
+    setConfig(prev => ({
       ...prev,
-      unitPrices: { ...prev.unitPrices, [key]: value },
+      supportingPrices: { ...prev.supportingPrices, [id]: price },
     }));
   }, []);
-
-  // 更新系数
-  const updateCoefficient = useCallback(<K extends keyof Coefficients>(
-    key: K, value: number
-  ) => {
-    setConfig((prev) => ({
-      ...prev,
-      coefficients: { ...prev.coefficients, [key]: value },
-    }));
-  }, []);
-
-  // 更新材料数量
-  const updateQuantity = useCallback(<K extends keyof LedScreenConfig['materialQuantities']>(
-    key: K, value: number
-  ) => {
-    setConfig((prev) => ({
-      ...prev,
-      materialQuantities: { ...prev.materialQuantities, [key]: value },
-    }));
-  }, []);
-
-  // 切换像素间距时自动更新推荐尺寸
-  useEffect(() => {
-    const mod = RECOMMENDED_MODULE_SIZE[config.pitch];
-    const cab = RECOMMENDED_CABINET_SIZE[config.pitch];
-    if (mod) {
-      setConfig((prev) => ({ ...prev, moduleWidth: mod.w, moduleHeight: mod.h }));
-    }
-    if (cab) {
-      setConfig((prev) => ({ ...prev, cabinetWidth: cab.w, cabinetHeight: cab.h }));
-    }
-  }, [config.pitch]);
-
-  // ─── 计算结果 ────────────────────────────────────────────────────────
-
-  const calc = useCallback((): CalculationResult | null => {
-    const { width, height, pitch, moduleWidth, moduleHeight, cabinetWidth, cabinetHeight, unitPrices, materialQuantities, coefficients } = config;
-    const pitchMm = PITCH_MM[pitch];
-    if (!pitchMm || width <= 0 || height <= 0) return null;
-
-    const area = width * height;
-    const moduleW = moduleWidth / 1000;
-    const moduleH = moduleHeight / 1000;
-    const modulesPerRow = Math.ceil(width / moduleW);
-    const modulesPerCol = Math.ceil(height / moduleH);
-    const moduleCount = modulesPerRow * modulesPerCol;
-
-    const cabW = cabinetWidth / 1000;
-    const cabH = cabinetHeight / 1000;
-    const cabsPerRow = Math.ceil(width / cabW);
-    const cabsPerCol = Math.ceil(height / cabH);
-    const cabinetCount = cabsPerRow * cabsPerCol;
-
-    // 总像素 = (宽/mm间距) × (高/mm间距)
-    const pixelsW = Math.round((width * 1000) / pitchMm);
-    const pixelsH = Math.round((height * 1000) / pitchMm);
-    const totalPixels = pixelsW * pixelsH;
-    const pixelDensity = Math.round(totalPixels / area);
-
-    // ─── 成本明细 ───
-    const items: { label: string; amount: number }[] = [
-      { label: 'LED模组', amount: unitPrices.ledModule * moduleCount },
-      { label: '箱体', amount: unitPrices.cabinet * cabinetCount },
-      { label: '电源', amount: unitPrices.powerSupply * cabinetCount * materialQuantities.powerSupplyPerCabinet },
-      { label: '安装架体', amount: unitPrices.mountingFrame * area },
-      { label: '太阳能供电系统', amount: unitPrices.solarPower * materialQuantities.solarPower },
-      { label: '控制系统', amount: unitPrices.controlSystem * materialQuantities.controlSystem },
-      { label: '雷达检测系统', amount: unitPrices.radarDetection * materialQuantities.radarDetection },
-      { label: '声光警示系统', amount: unitPrices.warningSystem * materialQuantities.warningSystem },
-    ];
-
-    const subtotal = items.reduce((s, i) => s + i.amount, 0);
-    const managementFee = subtotal * coefficients.managementFee / 100;
-    const totalWithManagement = subtotal + managementFee;
-    const tax = totalWithManagement * coefficients.taxRate / 100;
-    const totalWithTax = totalWithManagement + tax;
-    const profit = totalWithTax * coefficients.profitMargin / 100;
-    const finalPrice = totalWithTax + profit;
-
-    const breakdown = [
-      ...items,
-      { label: '管理费', amount: managementFee },
-      { label: '税金', amount: tax },
-      { label: '利润', amount: profit },
-    ];
-
-    return {
-      area: Math.round(area * 100) / 100,
-      moduleCount,
-      totalPixels,
-      pixelDensity,
-      cabinetCount,
-      costBreakdown: breakdown.map((item) => ({
-        ...item,
-        percentage: finalPrice > 0 ? (item.amount / finalPrice) * 100 : 0,
-      })),
-      totalCost: subtotal,
-      finalPrice,
-    };
-  }, [config]);
-
-  const result = calc();
-
-  // ─── 保存配置 ────────────────────────────────────────────────────────
 
   const handleSave = async () => {
     const name = configName.trim() || `配置_${Date.now()}`;
     const newConfig = { ...config, name };
-    const existing = savedConfigs.findIndex((c) => c.id === config.id);
-    let list: LedScreenConfig[];
+    const existing = savedConfigs.findIndex((c: any) => c.id === config.id);
+    let list: any[];
     let action: string;
     if (existing >= 0) {
       list = [...savedConfigs];
@@ -419,7 +348,7 @@ export default function LedScreenCost() {
   };
 
   const handleLoad = (id: string) => {
-    const found = savedConfigs.find((c) => c.id === id);
+    const found = savedConfigs.find((c: any) => c.id === id);
     if (found) {
       setConfig(found);
       setConfigName(found.name);
@@ -429,7 +358,7 @@ export default function LedScreenCost() {
   };
 
   const handleDelete = async (id: string) => {
-    const list = savedConfigs.filter((c) => c.id !== id);
+    const list = savedConfigs.filter((c: any) => c.id !== id);
     setSavedConfigs(list);
     try {
       await fetch('/api/data', {
@@ -443,13 +372,22 @@ export default function LedScreenCost() {
   };
 
   const handleNew = () => {
-    setConfig(createDefaultConfig('新配置'));
+    setConfig({
+      id: generateId(),
+      name: '新配置',
+      width: 3,
+      height: 2,
+      selectedModuleId: 'glg-p4',
+      supportingPrices: Object.fromEntries(SUPPORTING_UNITS.map(u => [u.id, u.defaultPrice])),
+      managementFee: 5,
+      taxRate: 13,
+      profitMargin: 15,
+    });
     setConfigName('新配置');
   };
 
-  // ─── 导出 TXT ────────────────────────────────────────────────────────
-
   const handleExport = () => {
+    const result = calculate(config);
     if (!result) return;
     const lines: string[] = [];
     const sep = '='.repeat(50);
@@ -462,16 +400,19 @@ export default function LedScreenCost() {
     lines.push(`配置名称: ${configName}`);
     lines.push(`生成时间: ${new Date().toLocaleString()}`);
     lines.push('');
+
     lines.push(sep2);
     lines.push('【屏幕参数】');
     lines.push(sep2);
     lines.push(`屏体尺寸: ${config.width}m × ${config.height}m`);
     lines.push(`显示面积: ${result.area}m²`);
-    lines.push(`像素间距: ${config.pitch}`);
-    lines.push(`使用环境: ${config.environment === 'indoor' ? '室内' : '户外'}`);
-    lines.push(`生产厂家: ${config.manufacturer}`);
-    lines.push(`模组尺寸: ${config.moduleWidth}×${config.moduleHeight}mm`);
-    lines.push(`箱体尺寸: ${config.cabinetWidth}×${config.cabinetHeight}mm`);
+    if (selectedModule) {
+      lines.push(`模组型号: ${selectedModule.model}`);
+      lines.push(`生产厂家: ${selectedModule.factory}`);
+      lines.push(`像素间距: ${selectedModule.pitch}`);
+      lines.push(`模组尺寸: ${selectedModule.moduleW}×${selectedModule.moduleH}mm`);
+      lines.push(`箱体尺寸: ${selectedModule.cabinetW}×${selectedModule.cabinetH}mm`);
+    }
     lines.push(`模组数量: ${result.moduleCount} 块`);
     lines.push(`箱体数量: ${result.cabinetCount} 个`);
     lines.push(`总像素数: ${result.totalPixels.toLocaleString()} 像素`);
@@ -481,50 +422,38 @@ export default function LedScreenCost() {
     lines.push(sep2);
     lines.push('【成本明细】');
     lines.push(sep2);
-    const header = '项目'.padEnd(16) + '金额'.padStart(12) + '占比'.padStart(10);
-    lines.push(header);
-    lines.push('-'.repeat(38));
     for (const item of result.costBreakdown) {
-      lines.push(
-        item.label.padEnd(16) +
-        formatMoney(item.amount).padStart(12) +
-        item.percentage.toFixed(1).padStart(8) + '%'
-      );
+      lines.push(`${item.label.padEnd(16)} ${formatMoney(item.amount).padStart(12)} ${item.percentage.toFixed(1).padStart(8)}%`);
     }
-    lines.push('-'.repeat(38));
-    lines.push(
-      '合计'.padEnd(16) +
-      formatMoney(result.finalPrice).padStart(12) +
-      '100.0%'.padStart(10)
-    );
-    lines.push('');
-    lines.push(`材料成本小计: ${formatMoney(result.totalCost)}`);
-    lines.push(`管理费(${config.coefficients.managementFee}%): ${formatMoney(result.costBreakdown.find(i => i.label === '管理费')?.amount || 0)}`);
-    lines.push(`税率(${config.coefficients.taxRate}%): ${formatMoney(result.costBreakdown.find(i => i.label === '税金')?.amount || 0)}`);
-    lines.push(`利润(${config.coefficients.profitMargin}%): ${formatMoney(result.costBreakdown.find(i => i.label === '利润')?.amount || 0)}`);
+    lines.push(sep2);
+    lines.push(`${'合计'.padEnd(16)} ${formatMoney(result.finalPrice).padStart(12)} 100.0%`);
     lines.push('');
     lines.push(`最终报价: ${formatMoney(result.finalPrice)}`);
-    lines.push(`单位面积价格: ${formatMoney(result.finalPrice / result.area)}/m²`);
-    lines.push('');
+    lines.push(`单位面积价格: ${formatMoney(result.pricePerM2)}/m²`);
 
     const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = URL.createObjectURL(blob);
     a.download = `LED屏成本_${configName.replace(/[/\\?%*:|"<>]/g, '_')}_${new Date().toISOString().slice(0, 10)}.txt`;
     a.click();
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(a.href);
   };
 
+  const filteredModules = selectedFactory === '全部'
+    ? MODULE_DATABASE
+    : MODULE_DATABASE.filter(m => m.factory === selectedFactory);
+
+  const result = calculate(config);
+
   return (
-    <div className="flex flex-col h-full">
-      {/* 顶部工具栏 */}
-      <div className="flex items-center justify-between gap-2 p-3 border-b bg-white shrink-0">
+    <div className="flex-1 flex flex-col h-full overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2 border-b bg-white shrink-0">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-bold text-slate-900">LED屏成本核算</h2>
+          <h2 className="text-base font-semibold">LED屏成本核算</h2>
           <Input
             value={configName}
-            onChange={(e) => setConfigName(e.target.value)}
+            onChange={e => setConfigName(e.target.value)}
             className="h-7 w-36 text-xs"
           />
           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={handleNew}>
@@ -538,258 +467,256 @@ export default function LedScreenCost() {
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <Label className="text-xs text-slate-500">加载配置:</Label>
-          <Select onValueChange={handleLoad}>
-            <SelectTrigger className="h-7 w-40 text-xs">
-              <SelectValue placeholder="选择保存的配置" />
-            </SelectTrigger>
-            <SelectContent>
-              {savedConfigs.length === 0 && (
-                <SelectItem value="__none" disabled>暂无保存的配置</SelectItem>
-              )}
-              {savedConfigs.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name} ({c.pitch} / {c.width}m×{c.height}m)
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <span className="text-xs text-slate-500">加载配置:</span>
+          <select
+            className="h-7 text-xs border rounded px-2 bg-white"
+            onChange={e => e.target.value && handleLoad(e.target.value)}
+            defaultValue=""
+          >
+            <option value="" disabled>选择保存的配置</option>
+            {savedConfigs.map((c: any) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
           {msg && <span className="text-xs text-emerald-600">{msg}</span>}
         </div>
       </div>
 
-      {/* 主内容区 - 滚动 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* ── 屏幕参数 ── */}
-        <Card>
-          <CardHeader className="py-2 px-3">
-            <SectionHeader
-              label="屏幕参数"
-              expanded={expanded.screen}
-              onToggle={() => setExpanded((e) => ({ ...e, screen: !e.screen }))}
-            />
-          </CardHeader>
-          {expanded.screen && (
-            <CardContent className="px-3 pb-3 space-y-2">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <NumInput label="屏体宽度" value={config.width} onChange={(v) => updateConfig('width', v)} unit="m" />
-                <NumInput label="屏体高度" value={config.height} onChange={(v) => updateConfig('height', v)} unit="m" />
-                <div className="flex items-center gap-2">
-                  <Label className="w-24 shrink-0 text-xs text-slate-600">像素间距</Label>
-                  <Select
-                    value={config.pitch}
-                    onValueChange={(v) => updateConfig('pitch', v as PixelPitch)}
-                  >
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PIXEL_PITCHES.map((p) => (
-                        <SelectItem key={p} value={p}>{p}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 max-w-7xl mx-auto">
+          {/* ── Left: Screen Size + Module Selection ── */}
+          <div className="lg:col-span-3 space-y-3">
+            {/* 屏幕尺寸设定 */}
+            <Card>
+              <CardContent className="p-3">
+                <div className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1">
+                  <div className="w-1 h-4 bg-blue-500 rounded" />
+                  屏幕尺寸设定
                 </div>
-                <div className="flex items-center gap-2">
-                  <Label className="w-24 shrink-0 text-xs text-slate-600">使用环境</Label>
-                  <Select
-                    value={config.environment}
-                    onValueChange={(v) => updateConfig('environment', v as 'indoor' | 'outdoor')}
-                  >
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="indoor">室内</SelectItem>
-                      <SelectItem value="outdoor">户外</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-slate-600 w-20 shrink-0">宽度</Label>
+                    <Input type="number" value={config.width} onChange={e => setConfig(prev => ({ ...prev, width: parseFloat(e.target.value) || 0 }))} className="h-7 text-xs flex-1" step={0.1} min={0} />
+                    <span className="text-xs text-slate-400 w-6">m</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-slate-600 w-20 shrink-0">高度</Label>
+                    <Input type="number" value={config.height} onChange={e => setConfig(prev => ({ ...prev, height: parseFloat(e.target.value) || 0 }))} className="h-7 text-xs flex-1" step={0.1} min={0} />
+                    <span className="text-xs text-slate-400 w-6">m</span>
+                  </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="flex items-center gap-2">
-                  <Label className="w-24 shrink-0 text-xs text-slate-600">生产厂家</Label>
-                  <Select
-                    value={config.manufacturer}
-                    onValueChange={(v) => updateConfig('manufacturer', v)}
-                  >
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MANUFACTURERS.map((m) => (
-                        <SelectItem key={m} value={m}>{m}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {result && (
+                  <div className="mt-2 text-xs text-blue-600 bg-blue-50 rounded px-2 py-1">
+                    显示面积: <strong>{result.area}m²</strong> | 模组数: {result.moduleCount}块 | 箱体数: {result.cabinetCount}个 | 总像素: {result.totalPixels.toLocaleString()} | 密度: {result.pixelDensity.toLocaleString()}/m²
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* LED模组选择 */}
+            <Card>
+              <CardContent className="p-3">
+                <div className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1">
+                  <div className="w-1 h-4 bg-emerald-500 rounded" />
+                  LED模组选择
                 </div>
-                <NumInput label="模组宽度" value={config.moduleWidth} onChange={(v) => updateConfig('moduleWidth', v)} unit="mm" />
-                <NumInput label="模组高度" value={config.moduleHeight} onChange={(v) => updateConfig('moduleHeight', v)} unit="mm" />
-              </div>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                <NumInput label="箱体宽度" value={config.cabinetWidth} onChange={(v) => updateConfig('cabinetWidth', v)} unit="mm" />
-                <NumInput label="箱体高度" value={config.cabinetHeight} onChange={(v) => updateConfig('cabinetHeight', v)} unit="mm" />
-              </div>
-            </CardContent>
-          )}
-        </Card>
-
-        {/* ── 自动计算结果 ── */}
-        {result && (
-          <Card className="border-blue-200 bg-blue-50/30">
-            <CardHeader className="py-2 px-3">
-              <CardTitle className="text-xs font-semibold text-blue-800">自动计算结果</CardTitle>
-            </CardHeader>
-            <CardContent className="px-3 pb-3">
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 text-xs">
-                <div className="bg-white rounded p-2 border"><span className="text-slate-500">显示面积</span><br /><span className="text-lg font-bold text-blue-700">{result.area} m²</span></div>
-                <div className="bg-white rounded p-2 border"><span className="text-slate-500">模组数量</span><br /><span className="text-lg font-bold text-blue-700">{result.moduleCount} 块</span></div>
-                <div className="bg-white rounded p-2 border"><span className="text-slate-500">箱体数量</span><br /><span className="text-lg font-bold text-blue-700">{result.cabinetCount} 个</span></div>
-                <div className="bg-white rounded p-2 border"><span className="text-slate-500">总像素数</span><br /><span className="text-lg font-bold text-blue-700">{result.totalPixels.toLocaleString()}</span></div>
-                <div className="bg-white rounded p-2 border"><span className="text-slate-500">像素密度</span><br /><span className="text-lg font-bold text-blue-700">{result.pixelDensity.toLocaleString()} /m²</span></div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* ── 材料单价 ── */}
-        <Card>
-          <CardHeader className="py-2 px-3">
-            <SectionHeader
-              label="材料单价"
-              expanded={expanded.materials}
-              onToggle={() => setExpanded((e) => ({ ...e, materials: !e.materials }))}
-            />
-          </CardHeader>
-          {expanded.materials && (
-            <CardContent className="px-3 pb-3 space-y-2">
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                <NumInput label="LED模组" value={config.unitPrices.ledModule} onChange={(v) => updatePrice('ledModule', v)} unit="元/块" step={1} />
-                <NumInput label="箱体" value={config.unitPrices.cabinet} onChange={(v) => updatePrice('cabinet', v)} unit="元/个" step={1} />
-                <NumInput label="电源" value={config.unitPrices.powerSupply} onChange={(v) => updatePrice('powerSupply', v)} unit="元/个" step={1} />
-                <NumInput label="安装架体" value={config.unitPrices.mountingFrame} onChange={(v) => updatePrice('mountingFrame', v)} unit="元/m²" step={1} />
-                <NumInput label="太阳能供电系统" value={config.unitPrices.solarPower} onChange={(v) => updatePrice('solarPower', v)} unit="元/套" step={10} />
-                <NumInput label="控制系统" value={config.unitPrices.controlSystem} onChange={(v) => updatePrice('controlSystem', v)} unit="元/套" step={10} />
-                <NumInput label="雷达检测系统" value={config.unitPrices.radarDetection} onChange={(v) => updatePrice('radarDetection', v)} unit="元/套" step={10} />
-                  <NumInput label="声光警示系统" value={config.unitPrices.warningSystem} onChange={(v) => updatePrice('warningSystem', v)} unit="元/套" step={10} />
-              </div>
-              <div className="border-t pt-2 mt-2">
-                <p className="text-xs font-semibold text-slate-600 mb-2">数量系数</p>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                  <NumInput label="太阳能供电系统" value={config.materialQuantities.solarPower} onChange={(v) => updateQuantity('solarPower', v)} unit="套" step={1} min={0} />
-                  <NumInput label="控制系统" value={config.materialQuantities.controlSystem} onChange={(v) => updateQuantity('controlSystem', v)} unit="套" step={1} min={0} />
-                  <NumInput label="雷达检测系统" value={config.materialQuantities.radarDetection} onChange={(v) => updateQuantity('radarDetection', v)} unit="套" step={1} min={0} />
-                  <NumInput label="声光警示系统" value={config.materialQuantities.warningSystem} onChange={(v) => updateQuantity('warningSystem', v)} unit="套" step={1} min={0} />
-                  <NumInput label="每箱体配电源" value={config.materialQuantities.powerSupplyPerCabinet} onChange={(v) => updateQuantity('powerSupplyPerCabinet', v)} unit="个/箱" step={1} min={0} />
+                {/* Factory tabs */}
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {FACTORIES.map(f => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setSelectedFactory(f)}
+                      className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                        selectedFactory === f
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {f}
+                    </button>
+                  ))}
                 </div>
-              </div>
-            </CardContent>
-          )}
-        </Card>
-
-        {/* ── 成本系数 ── */}
-        <Card>
-          <CardHeader className="py-2 px-3">
-            <SectionHeader
-              label="成本系数"
-              expanded={expanded.coefficients}
-              onToggle={() => setExpanded((e) => ({ ...e, coefficients: !e.coefficients }))}
-            />
-          </CardHeader>
-          {expanded.coefficients && (
-            <CardContent className="px-3 pb-3 space-y-2">
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                <NumInput label="管理费" value={config.coefficients.managementFee} onChange={(v) => updateCoefficient('managementFee', v)} unit="%" step={0.5} />
-                <NumInput label="税率" value={config.coefficients.taxRate} onChange={(v) => updateCoefficient('taxRate', v)} unit="%" step={0.5} />
-                <NumInput label="利润率" value={config.coefficients.profitMargin} onChange={(v) => updateCoefficient('profitMargin', v)} unit="%" step={0.5} />
-              </div>
-            </CardContent>
-          )}
-        </Card>
-
-        {/* ── 成本明细表 ── */}
-        {result && (
-          <Card>
-            <CardHeader className="py-2 px-3">
-              <SectionHeader
-                label={`成本明细表 — 最终报价: ${formatMoney(result.finalPrice)}`}
-                expanded={expanded.result}
-                onToggle={() => setExpanded((e) => ({ ...e, result: !e.result }))}
-              />
-            </CardHeader>
-            {expanded.result && (
-              <CardContent className="px-3 pb-3">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-slate-100">
-                        <th className="text-left px-2 py-1.5 border">项目</th>
-                        <th className="text-right px-2 py-1.5 border">金额</th>
-                        <th className="text-right px-2 py-1.5 border">占比</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {result.costBreakdown.map((item, i) => (
-                        <tr key={i} className={i < result.costBreakdown.length - 3 ? '' : 'bg-amber-50/50'}>
-                          <td className="px-2 py-1 border">{item.label}</td>
-                          <td className="text-right px-2 py-1 border font-mono">{formatMoney(item.amount)}</td>
-                          <td className="text-right px-2 py-1 border">{item.percentage.toFixed(1)}%</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-slate-100 font-bold">
-                        <td className="px-2 py-1.5 border">最终报价</td>
-                        <td className="text-right px-2 py-1.5 border font-mono text-blue-700">{formatMoney(result.finalPrice)}</td>
-                        <td className="text-right px-2 py-1.5 border">100%</td>
-                      </tr>
-                      <tr className="text-xs text-slate-500">
-                        <td className="px-2 py-1 border" colSpan={3}>
-                          单位面积价格: {formatMoney(result.finalPrice / result.area)}/m²
-                          &nbsp;|&nbsp; 材料成本: {formatMoney(result.totalCost)}
-                          &nbsp;|&nbsp; 管理费: {config.coefficients.managementFee}%
-                          &nbsp;|&nbsp; 税率: {config.coefficients.taxRate}%
-                          &nbsp;|&nbsp; 利润: {config.coefficients.profitMargin}%
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                {/* Module cards grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-1">
+                  {filteredModules.map(mod => {
+                    const isSelected = config.selectedModuleId === mod.id;
+                    const pitchNum = parseFloat(mod.pitch.replace('P', ''));
+                    return (
+                      <button
+                        key={mod.id}
+                        type="button"
+                        onClick={() => setConfig(prev => ({
+                          ...prev,
+                          selectedModuleId: mod.id,
+                          // Also update width/height to match module dimensions
+                          width: Math.ceil(prev.width / (mod.moduleW / 1000)) * (mod.moduleW / 1000),
+                          height: Math.ceil(prev.height / (mod.moduleH / 1000)) * (mod.moduleH / 1000),
+                        }))}
+                        className={`text-left border rounded-lg p-2 transition-all ${
+                          isSelected
+                            ? 'border-blue-500 ring-1 ring-blue-500 bg-blue-50'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-semibold text-slate-800">{mod.model}</span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${
+                            mod.type === 'COB' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {mod.type}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-500 mb-1">
+                          {mod.factory} | {mod.pitch} | {mod.moduleW}×{mod.moduleH}mm
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-bold text-blue-600">
+                            ¥{mod.price.toFixed(0)}<span className="text-xs font-normal text-slate-400">/块</span>
+                          </span>
+                          <span className="text-xs text-slate-400">{mod.scanMode}扫</span>
+                        </div>
+                        <div className="text-xs text-slate-400 mt-1 flex flex-wrap gap-x-2">
+                          <span>{mod.brightness}cd</span>
+                          <span>{mod.refreshRate}Hz</span>
+                          <span>{mod.powerConsumption}W/m²</span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </CardContent>
-            )}
-          </Card>
-        )}
+            </Card>
+          </div>
 
-        {/* ── 已保存配置列表 ── */}
-        {savedConfigs.length > 0 && (
-          <Card>
-            <CardHeader className="py-2 px-3">
-              <CardTitle className="text-xs font-semibold text-slate-700">已保存配置 ({savedConfigs.length})</CardTitle>
-            </CardHeader>
-            <CardContent className="px-3 pb-3">
-              <div className="space-y-1">
-                {savedConfigs.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between py-1 px-2 rounded hover:bg-slate-50 border">
-                    <div className="text-xs">
-                      <span className="font-medium">{c.name}</span>
-                      <span className="text-slate-400 ml-2">
-                        {c.pitch} | {c.width}m×{c.height}m | {c.manufacturer}
-                      </span>
+          {/* ── Right: Supporting Unit Costs + Coefficients + Results ── */}
+          <div className="lg:col-span-2 space-y-3">
+            {/* 配套单元成本 */}
+            <Card>
+              <CardContent className="p-3">
+                <div className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1">
+                  <div className="w-1 h-4 bg-amber-500 rounded" />
+                  配套单元成本 <span className="text-xs font-normal text-slate-400">(可手动输入)</span>
+                </div>
+                <div className="space-y-1.5">
+                  {SUPPORTING_UNITS.map(u => (
+                    <div key={u.id} className="flex items-center gap-2 bg-slate-50 rounded px-2 py-1.5">
+                      <div className="w-6 shrink-0 flex justify-center">{u.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-slate-700">{u.name}</div>
+                        <div className="text-[10px] text-slate-400 truncate">{u.description}</div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Input
+                          type="number"
+                          value={config.supportingPrices[u.id]}
+                          onChange={e => updateSupportingPrice(u.id, parseFloat(e.target.value) || 0)}
+                          className="h-7 w-20 text-xs text-right"
+                          step={10}
+                          min={0}
+                        />
+                        <span className="text-[10px] text-slate-400 w-10">{u.unit}</span>
+                      </div>
                     </div>
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => handleLoad(c.id)}>
-                        加载
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-6 text-xs text-red-500 hover:text-red-700" onClick={() => handleDelete(c.id)}>
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 成本系数 */}
+            <Card>
+              <CardContent className="p-3">
+                <div className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1">
+                  <div className="w-1 h-4 bg-slate-400 rounded" />
+                  成本系数
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex items-center gap-1">
+                    <Label className="text-xs text-slate-600 shrink-0">管理费</Label>
+                    <Input type="number" value={config.managementFee} onChange={e => setConfig(prev => ({ ...prev, managementFee: parseFloat(e.target.value) || 0 }))} className="h-7 text-xs flex-1" step={0.5} />
+                    <span className="text-xs text-slate-400 w-4">%</span>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  <div className="flex items-center gap-1">
+                    <Label className="text-xs text-slate-600 shrink-0">税率</Label>
+                    <Input type="number" value={config.taxRate} onChange={e => setConfig(prev => ({ ...prev, taxRate: parseFloat(e.target.value) || 0 }))} className="h-7 text-xs flex-1" step={0.5} />
+                    <span className="text-xs text-slate-400 w-4">%</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Label className="text-xs text-slate-600 shrink-0">利润</Label>
+                    <Input type="number" value={config.profitMargin} onChange={e => setConfig(prev => ({ ...prev, profitMargin: parseFloat(e.target.value) || 0 }))} className="h-7 text-xs flex-1" step={0.5} />
+                    <span className="text-xs text-slate-400 w-4">%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 成本明细表 */}
+            {result && (
+              <Card className="border-2 border-blue-200">
+                <CardContent className="p-3">
+                  <div className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1">
+                    <div className="w-1 h-4 bg-blue-500 rounded" />
+                    成本明细表
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-slate-50">
+                          <th className="text-left px-2 py-1.5 font-medium text-slate-600">项目</th>
+                          <th className="text-right px-2 py-1.5 font-medium text-slate-600">金额</th>
+                          <th className="text-right px-2 py-1.5 font-medium text-slate-600">占比</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {result.costBreakdown.map((item, i) => (
+                          <tr key={i} className="border-t hover:bg-slate-50">
+                            <td className="px-2 py-1">{item.label}</td>
+                            <td className="px-2 py-1 text-right font-mono">{formatMoney(item.amount)}</td>
+                            <td className="px-2 py-1 text-right text-slate-500">{item.percentage}%</td>
+                          </tr>
+                        ))}
+                        <tr className="border-t-2 bg-blue-50 font-semibold">
+                          <td className="px-2 py-1.5">最终报价</td>
+                          <td className="px-2 py-1.5 text-right font-mono text-blue-700">{formatMoney(result.finalPrice)}</td>
+                          <td className="px-2 py-1.5 text-right">100%</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-2 text-xs text-slate-500 text-center">
+                    单位面积价格: <strong className="text-blue-600">{formatMoney(result.pricePerM2)}/m²</strong> | 材料成本: {formatMoney(result.materialTotal)}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 已保存配置 */}
+            {savedConfigs.length > 0 && (
+              <Card>
+                <CardContent className="p-3">
+                  <div className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1">
+                    <div className="w-1 h-4 bg-slate-400 rounded" />
+                    已保存配置 ({savedConfigs.length})
+                  </div>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {savedConfigs.map((c: any) => (
+                      <div key={c.id} className="flex items-center justify-between py-1 px-2 rounded hover:bg-slate-50 border text-xs">
+                        <span className="font-medium">{c.name}</span>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" className="h-5 text-xs px-1.5" onClick={() => handleLoad(c.id)}>加载</Button>
+                          <Button size="sm" variant="ghost" className="h-5 text-xs px-1.5 text-red-500" onClick={() => handleDelete(c.id)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
