@@ -135,6 +135,66 @@ const MODULE_DATABASE: LedModuleSpec[] = [
   { id: 'gm-p6', model: 'P6', factory: '光茗光电', type: 'SMD', pitch: 'P6', moduleW: 192, moduleH: 192, brightness: 4500, refreshRate: 3840, powerConsumption: 145, scanMode: '1/8', price: 35, cabinetW: 576, cabinetH: 576 },
   { id: 'gm-p8', model: 'P8', factory: '光茗光电', type: 'SMD', pitch: 'P8', moduleW: 320, moduleH: 160, brightness: 5000, refreshRate: 1920, powerConsumption: 135, scanMode: '1/4', price: 28, cabinetW: 640, cabinetH: 480 },
   { id: 'gm-p10', model: 'P10', factory: '光茗光电', type: 'SMD', pitch: 'P10', moduleW: 320, moduleH: 160, brightness: 5500, refreshRate: 1920, powerConsumption: 125, scanMode: '1/4', price: 22, cabinetW: 640, cabinetH: 480 },
+
+  // ── P12户外全系列 (亮度8000-12000) ──
+  { id: 'lyd-p12', model: 'P12', factory: '利亚德', type: 'SMD', pitch: 'P12', moduleW: 384, moduleH: 192, brightness: 10000, refreshRate: 1920, powerConsumption: 110, scanMode: '1/2', price: 18, cabinetW: 768, cabinetH: 576 },
+  { id: 'zm-p12', model: 'P12', factory: '洲明科技', type: 'SMD', pitch: 'P12', moduleW: 384, moduleH: 192, brightness: 10000, refreshRate: 1920, powerConsumption: 110, scanMode: '1/2', price: 16, cabinetW: 768, cabinetH: 576 },
+  { id: 'abs-p12', model: 'P12', factory: '艾比森', type: 'SMD', pitch: 'P12', moduleW: 384, moduleH: 192, brightness: 10000, refreshRate: 1920, powerConsumption: 110, scanMode: '1/2', price: 17, cabinetW: 768, cabinetH: 576 },
+  { id: 'qljc-p12', model: 'P12', factory: '强力巨彩', type: 'SMD', pitch: 'P12', moduleW: 384, moduleH: 192, brightness: 10000, refreshRate: 1920, powerConsumption: 110, scanMode: '1/2', price: 14, cabinetW: 768, cabinetH: 576 },
+  { id: 'lm-p12', model: 'P12', factory: '雷曼光电', type: 'SMD', pitch: 'P12', moduleW: 384, moduleH: 192, brightness: 10000, refreshRate: 1920, powerConsumption: 110, scanMode: '1/2', price: 18, cabinetW: 768, cabinetH: 576 },
+  { id: 'hjcl-p12', model: 'P12', factory: '海佳彩亮', type: 'SMD', pitch: 'P12', moduleW: 384, moduleH: 192, brightness: 10000, refreshRate: 1920, powerConsumption: 110, scanMode: '1/2', price: 13, cabinetW: 768, cabinetH: 576 },
+  { id: 'ty-p12', model: 'P12', factory: '通用', type: 'SMD', pitch: 'P12', moduleW: 384, moduleH: 192, brightness: 10000, refreshRate: 1920, powerConsumption: 110, scanMode: '1/2', price: 12, cabinetW: 768, cabinetH: 576 },
+  { id: 'glg-p12', model: 'P12', factory: '格莱光', type: 'SMD', pitch: 'P12', moduleW: 384, moduleH: 192, brightness: 10000, refreshRate: 1920, powerConsumption: 110, scanMode: '1/2', price: 15, cabinetW: 768, cabinetH: 576 },
+  { id: 'xet-p12', model: 'P12', factory: '鑫恩拓', type: 'SMD', pitch: 'P12', moduleW: 384, moduleH: 192, brightness: 10000, refreshRate: 1920, powerConsumption: 110, scanMode: '1/2', price: 13, cabinetW: 768, cabinetH: 576 },
+  { id: 'gm-p12', model: 'P12', factory: '光茗光电', type: 'SMD', pitch: 'P12', moduleW: 384, moduleH: 192, brightness: 10000, refreshRate: 1920, powerConsumption: 110, scanMode: '1/2', price: 14, cabinetW: 768, cabinetH: 576 },
+
+  // ── P16户外全系列 (亮度10000-15000) ──
+  { id: 'lyd-p16', model: 'P16', factory: '利亚德', type: 'SMD', pitch: 'P16', moduleW: 256, moduleH: 128, brightness: 12000, refreshRate: 1920, powerConsumption: 100, scanMode: '1/2', price: 15, cabinetW: 768, cabinetH: 576 },
+  { id: 'zm-p16', model: 'P16', factory: '洲明科技', type: 'SMD', pitch: 'P16', moduleW: 256, moduleH: 128, brightness: 12000, refreshRate: 1920, powerConsumption: 100, scanMode: '1/2', price: 14, cabinetW: 768, cabinetH: 576 },
+  { id: 'abs-p16', model: 'P16', factory: '艾比森', type: 'SMD', pitch: 'P16', moduleW: 256, moduleH: 128, brightness: 12000, refreshRate: 1920, powerConsumption: 100, scanMode: '1/2', price: 14, cabinetW: 768, cabinetH: 576 },
+  { id: 'qljc-p16', model: 'P16', factory: '强力巨彩', type: 'SMD', pitch: 'P16', moduleW: 256, moduleH: 128, brightness: 12000, refreshRate: 1920, powerConsumption: 100, scanMode: '1/2', price: 12, cabinetW: 768, cabinetH: 576 },
+  { id: 'lm-p16', model: 'P16', factory: '雷曼光电', type: 'SMD', pitch: 'P16', moduleW: 256, moduleH: 128, brightness: 12000, refreshRate: 1920, powerConsumption: 100, scanMode: '1/2', price: 15, cabinetW: 768, cabinetH: 576 },
+  { id: 'hjcl-p16', model: 'P16', factory: '海佳彩亮', type: 'SMD', pitch: 'P16', moduleW: 256, moduleH: 128, brightness: 12000, refreshRate: 1920, powerConsumption: 100, scanMode: '1/2', price: 11, cabinetW: 768, cabinetH: 576 },
+  { id: 'ty-p16', model: 'P16', factory: '通用', type: 'SMD', pitch: 'P16', moduleW: 256, moduleH: 128, brightness: 12000, refreshRate: 1920, powerConsumption: 100, scanMode: '1/2', price: 10, cabinetW: 768, cabinetH: 576 },
+  { id: 'glg-p16', model: 'P16', factory: '格莱光', type: 'SMD', pitch: 'P16', moduleW: 256, moduleH: 128, brightness: 12000, refreshRate: 1920, powerConsumption: 100, scanMode: '1/2', price: 13, cabinetW: 768, cabinetH: 576 },
+  { id: 'xet-p16', model: 'P16', factory: '鑫恩拓', type: 'SMD', pitch: 'P16', moduleW: 256, moduleH: 128, brightness: 12000, refreshRate: 1920, powerConsumption: 100, scanMode: '1/2', price: 11, cabinetW: 768, cabinetH: 576 },
+  { id: 'gm-p16', model: 'P16', factory: '光茗光电', type: 'SMD', pitch: 'P16', moduleW: 256, moduleH: 128, brightness: 12000, refreshRate: 1920, powerConsumption: 100, scanMode: '1/2', price: 12, cabinetW: 768, cabinetH: 576 },
+
+  // ── P20户外全系列 (亮度12000-18000) ──
+  { id: 'lyd-p20', model: 'P20', factory: '利亚德', type: 'SMD', pitch: 'P20', moduleW: 320, moduleH: 160, brightness: 15000, refreshRate: 1920, powerConsumption: 90, scanMode: '1/2', price: 12, cabinetW: 960, cabinetH: 640 },
+  { id: 'zm-p20', model: 'P20', factory: '洲明科技', type: 'SMD', pitch: 'P20', moduleW: 320, moduleH: 160, brightness: 15000, refreshRate: 1920, powerConsumption: 90, scanMode: '1/2', price: 11, cabinetW: 960, cabinetH: 640 },
+  { id: 'abs-p20', model: 'P20', factory: '艾比森', type: 'SMD', pitch: 'P20', moduleW: 320, moduleH: 160, brightness: 15000, refreshRate: 1920, powerConsumption: 90, scanMode: '1/2', price: 11, cabinetW: 960, cabinetH: 640 },
+  { id: 'qljc-p20', model: 'P20', factory: '强力巨彩', type: 'SMD', pitch: 'P20', moduleW: 320, moduleH: 160, brightness: 15000, refreshRate: 1920, powerConsumption: 90, scanMode: '1/2', price: 9, cabinetW: 960, cabinetH: 640 },
+  { id: 'lm-p20', model: 'P20', factory: '雷曼光电', type: 'SMD', pitch: 'P20', moduleW: 320, moduleH: 160, brightness: 15000, refreshRate: 1920, powerConsumption: 90, scanMode: '1/2', price: 12, cabinetW: 960, cabinetH: 640 },
+  { id: 'hjcl-p20', model: 'P20', factory: '海佳彩亮', type: 'SMD', pitch: 'P20', moduleW: 320, moduleH: 160, brightness: 15000, refreshRate: 1920, powerConsumption: 90, scanMode: '1/2', price: 8, cabinetW: 960, cabinetH: 640 },
+  { id: 'ty-p20', model: 'P20', factory: '通用', type: 'SMD', pitch: 'P20', moduleW: 320, moduleH: 160, brightness: 15000, refreshRate: 1920, powerConsumption: 90, scanMode: '1/2', price: 7, cabinetW: 960, cabinetH: 640 },
+  { id: 'glg-p20', model: 'P20', factory: '格莱光', type: 'SMD', pitch: 'P20', moduleW: 320, moduleH: 160, brightness: 15000, refreshRate: 1920, powerConsumption: 90, scanMode: '1/2', price: 10, cabinetW: 960, cabinetH: 640 },
+  { id: 'xet-p20', model: 'P20', factory: '鑫恩拓', type: 'SMD', pitch: 'P20', moduleW: 320, moduleH: 160, brightness: 15000, refreshRate: 1920, powerConsumption: 90, scanMode: '1/2', price: 8, cabinetW: 960, cabinetH: 640 },
+  { id: 'gm-p20', model: 'P20', factory: '光茗光电', type: 'SMD', pitch: 'P20', moduleW: 320, moduleH: 160, brightness: 15000, refreshRate: 1920, powerConsumption: 90, scanMode: '1/2', price: 9, cabinetW: 960, cabinetH: 640 },
+
+  // ── P25户外全系列 (亮度15000-20000) ──
+  { id: 'lyd-p25', model: 'P25', factory: '利亚德', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 10, cabinetW: 800, cabinetH: 600 },
+  { id: 'zm-p25', model: 'P25', factory: '洲明科技', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 9, cabinetW: 800, cabinetH: 600 },
+  { id: 'abs-p25', model: 'P25', factory: '艾比森', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 9, cabinetW: 800, cabinetH: 600 },
+  { id: 'qljc-p25', model: 'P25', factory: '强力巨彩', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 7, cabinetW: 800, cabinetH: 600 },
+  { id: 'lm-p25', model: 'P25', factory: '雷曼光电', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 10, cabinetW: 800, cabinetH: 600 },
+  { id: 'hjcl-p25', model: 'P25', factory: '海佳彩亮', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 6, cabinetW: 800, cabinetH: 600 },
+  { id: 'ty-p25', model: 'P25', factory: '通用', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 5, cabinetW: 800, cabinetH: 600 },
+  { id: 'glg-p25', model: 'P25', factory: '格莱光', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 8, cabinetW: 800, cabinetH: 600 },
+  { id: 'xet-p25', model: 'P25', factory: '鑫恩拓', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 6, cabinetW: 800, cabinetH: 600 },
+  { id: 'gm-p25', model: 'P25', factory: '光茗光电', type: 'SMD', pitch: 'P25', moduleW: 400, moduleH: 200, brightness: 18000, refreshRate: 1920, powerConsumption: 80, scanMode: '1/2', price: 7, cabinetW: 800, cabinetH: 600 },
+
+  // ── P33.33户外全系列 (亮度15000-20000) ──
+  { id: 'lyd-p33', model: 'P33.33', factory: '利亚德', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 8, cabinetW: 960, cabinetH: 640 },
+  { id: 'zm-p33', model: 'P33.33', factory: '洲明科技', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 7, cabinetW: 960, cabinetH: 640 },
+  { id: 'abs-p33', model: 'P33.33', factory: '艾比森', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 7, cabinetW: 960, cabinetH: 640 },
+  { id: 'qljc-p33', model: 'P33.33', factory: '强力巨彩', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 5, cabinetW: 960, cabinetH: 640 },
+  { id: 'lm-p33', model: 'P33.33', factory: '雷曼光电', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 8, cabinetW: 960, cabinetH: 640 },
+  { id: 'hjcl-p33', model: 'P33.33', factory: '海佳彩亮', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 4, cabinetW: 960, cabinetH: 640 },
+  { id: 'ty-p33', model: 'P33.33', factory: '通用', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 3, cabinetW: 960, cabinetH: 640 },
+  { id: 'glg-p33', model: 'P33.33', factory: '格莱光', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 6, cabinetW: 960, cabinetH: 640 },
+  { id: 'xet-p33', model: 'P33.33', factory: '鑫恩拓', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 4, cabinetW: 960, cabinetH: 640 },
+  { id: 'gm-p33', model: 'P33.33', factory: '光茗光电', type: 'SMD', pitch: 'P33.33', moduleW: 320, moduleH: 160, brightness: 20000, refreshRate: 960, powerConsumption: 70, scanMode: '1/1', price: 5, cabinetW: 960, cabinetH: 640 },
 ];
 
 const FACTORIES = ['全部', '利亚德', '洲明科技', '艾比森', '强力巨彩', '雷曼光电', '海佳彩亮', '通用', '格莱光', '鑫恩拓', '光茗光电'];
