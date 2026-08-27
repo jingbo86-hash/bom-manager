@@ -13,7 +13,7 @@ if %errorlevel% neq 0 (
 )
 
 echo ============================================
-echo  [2/5] Updating database...
+echo  [2/5] Updating database (preserving data)...
 echo ============================================
 mysql -u root -p123456 -e "CREATE DATABASE IF NOT EXISTS bom_system DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 if %errorlevel% neq 0 (
@@ -21,10 +21,11 @@ if %errorlevel% neq 0 (
     pause
     exit /b 1
 )
-mysql -u root -p123456 bom_system < bom_system_schema.sql
-if %errorlevel% neq 0 (
-    echo [WARN] DB schema update may have failed, continuing...
-)
+
+echo -- Creating new tables if not exist (safe, no data loss)...
+mysql -u root -p123456 -e "CREATE TABLE IF NOT EXISTS bom_system.led_configs (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(200) NOT NULL, moduleType VARCHAR(50) DEFAULT 'led', data LONGTEXT, createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
+
+echo -- Running migration (add missing columns)...
 mysql -u root -p123456 bom_system < migrate.sql
 if %errorlevel% neq 0 (
     echo [WARN] DB migration may have failed, continuing...
