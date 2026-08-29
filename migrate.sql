@@ -16,7 +16,8 @@ BEGIN
     SELECT t, c, col_type, col_after FROM (
       SELECT 'parts' AS t, 'price' AS c, 'DECIMAL(12,2) DEFAULT 0.00' AS col_type, 'unit' AS col_after
       UNION SELECT 'parts', 'quantity', 'DECIMAL(12,4) DEFAULT 0.0000', 'price'
-    UNION SELECT 'parts', 'unit_price', 'DECIMAL(12,2) DEFAULT 0.00', 'price'
+      UNION SELECT 'parts', 'unit_price', 'DECIMAL(12,2) DEFAULT 0.00', 'price'
+      UNION SELECT 'parts', 'top_assembly_ids', 'JSON DEFAULT NULL', 'updated_at'
     ) AS cols
     WHERE NOT EXISTS (
       SELECT 1 FROM information_schema.COLUMNS 

@@ -116,6 +116,7 @@ CREATE TABLE `parts` (
   `category_id` varchar(36) DEFAULT NULL,
   `remark` varchar(500) DEFAULT '',
   `purchase_link` varchar(500) DEFAULT '',
+  `top_assembly_ids` json DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)

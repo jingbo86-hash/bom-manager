@@ -20,6 +20,7 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
     categoryId: 'category_id',
     purchaseLink: 'purchase_link',
     unitPrice: 'unit_price',
+    topAssemblyIds: 'top_assembly_ids',
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   },
