@@ -19,6 +19,7 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
     supplier: 'supplier',
     categoryId: 'category_id',
     purchaseLink: 'purchase_link',
+    unitPrice: 'unit_price',
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   },
@@ -72,7 +73,7 @@ function toCamelCase(str: string): string {
 
 // 数字字段列表（按表分组，MySQL DECIMAL 返回字符串需转数字）
 const NUMERIC_FIELDS: Record<string, string[]> = {
-  parts: ['price', 'quantity'],
+  parts: ['price', 'quantity', 'unitPrice'],
   bomEntries: ['quantity', 'wasteRate'],
   products: ['totalMaterialCost', 'totalCost', 'totalAmount', 'suggestedPrice'],
   quotes: ['totalMaterialCost', 'totalCost', 'totalAmount', 'suggestedPrice', 'profitMargin'],
