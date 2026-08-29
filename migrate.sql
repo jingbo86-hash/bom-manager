@@ -18,6 +18,11 @@ BEGIN
       UNION SELECT 'parts', 'quantity', 'DECIMAL(12,4) DEFAULT 0.0000', 'price'
       UNION SELECT 'parts', 'unit_price', 'DECIMAL(12,2) DEFAULT 0.00', 'price'
       UNION SELECT 'parts', 'top_assembly_ids', 'JSON DEFAULT NULL', 'updated_at'
+      UNION SELECT 'categories', 'top_assembly_ids', 'JSON DEFAULT NULL', 'updated_at'
+      UNION SELECT 'assemblies', 'top_assembly_ids', 'JSON DEFAULT NULL', 'updated_at'
+      UNION SELECT 'bom_entries', 'top_assembly_ids', 'JSON DEFAULT NULL', 'waste_rate'
+      UNION SELECT 'led_configs', 'top_assembly_ids', 'JSON DEFAULT NULL', 'updated_at'
+      UNION SELECT 'quotes', 'top_assembly_ids', 'JSON DEFAULT NULL', 'created_at'
     ) AS cols
     WHERE NOT EXISTS (
       SELECT 1 FROM information_schema.COLUMNS 

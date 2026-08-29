@@ -26,11 +26,13 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
   },
   categories: {
     parentId: 'parent_id',
+    topAssemblyIds: 'top_assembly_ids',
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   },
   assemblies: {
     type: 'type',
+    topAssemblyIds: 'top_assembly_ids',
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   },
@@ -39,6 +41,7 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
     childId: 'child_id',
     childType: 'child_type',
     wasteRate: 'waste_rate',
+    topAssemblyIds: 'top_assembly_ids',
   },
   products: {
     topAssemblyIds: 'top_assembly_ids',
@@ -46,6 +49,7 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
     updatedAt: 'updated_at',
   },
   ledConfigs: {
+    topAssemblyIds: 'top_assembly_ids',
     createdAt: 'created_at',
     updatedAt: 'updated_at',
   },
@@ -60,6 +64,7 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
     totalAmount: 'total_amount',
     totalAmountCn: 'total_amount_cn',
     suggestedPrice: 'suggested_price',
+    topAssemblyIds: 'top_assembly_ids',
     createdAt: 'created_at',
   },
 };
