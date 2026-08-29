@@ -20,7 +20,7 @@ BEGIN
       UNION SELECT 'parts', 'top_assembly_ids', 'JSON DEFAULT NULL', 'updated_at'
       UNION SELECT 'categories', 'top_assembly_ids', 'JSON DEFAULT NULL', 'updated_at'
       UNION SELECT 'assemblies', 'top_assembly_ids', 'JSON DEFAULT NULL', 'updated_at'
-      UNION SELECT 'bom_entries', 'top_assembly_ids', 'JSON DEFAULT NULL', 'waste_rate'
+      UNION SELECT 'bom_entries', 'top_assembly_ids', 'JSON DEFAULT NULL', 'created_at'
       UNION SELECT 'led_configs', 'top_assembly_ids', 'JSON DEFAULT NULL', 'updated_at'
       UNION SELECT 'quotes', 'top_assembly_ids', 'JSON DEFAULT NULL', 'created_at'
     ) AS cols
