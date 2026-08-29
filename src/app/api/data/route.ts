@@ -70,6 +70,8 @@ const FIELD_MAP: Record<string, Record<string, string>> = {
 };
 
 function toDbField(type: string, field: string): string {
+  // 全局映射：topAssemblyIds → top_assembly_ids（所有表通用）
+  if (field === 'topAssemblyIds') return 'top_assembly_ids';
   return FIELD_MAP[type]?.[field] || field;
 }
 
